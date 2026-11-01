@@ -8,6 +8,10 @@ const base = 'https://repo.webosbrew.org/api';
 const item = {id: 'example.app', title: 'Example', iconUri: 'https://example.com/icon.png',
     manifest: {id: 'example.app', version: '1.2.3'}, fullDescriptionUrl: './description.html'};
 const page = {paging: {page: 1, count: 1, maxPage: 1, itemsTotal: 1}, packages: [item]};
+const customUrl = 'https://catalog.example.test/repo/catalog.json';
+const customItem = {id: 'custom.app', title: 'Custom', iconUri: './icons/custom.png', detailIcon: './icons/detail.png',
+    fullDescriptionUrl: './description.html', manifestUrl: './manifest.json',
+    manifest: {id: 'custom.app', version: '2.0.0', ipkUrl: './packages/custom.ipk', ipkHash: {sha256: 'a'.repeat(64)}}};
 const service = () => new AppsRepoService();
 
 function respond(body: unknown, status = 200) {
@@ -30,6 +34,51 @@ describe('AppsRepoService repository requests', () => {
     it('accepts a valid empty page', async () => {
         respond({paging: {page: 1, count: 0, maxPage: 0, itemsTotal: 0}, packages: []});
         expect((await firstValueFrom(service().allApps$())).packages).toEqual([]);
+    });
+
+    it('accepts an unpaged custom catalog and resolves its metadata URLs', async () => {
+        respond({packages: [customItem]});
+        const result = await firstValueFrom(service().allApps$(0, customUrl));
+        expect(result.paging).toEqual({page: 1, count: 1, maxPage: 1, itemsTotal: 1});
+        expect(result.packages[0].iconUri).toBe('https://catalog.example.test/repo/icons/custom.png');
+        expect(result.packages[0].detailIconUri).toBe('https://catalog.example.test/repo/icons/detail.png');
+        expect(result.packages[0].fullDescriptionUrl).toBe('https://catalog.example.test/repo/description.html');
+        expect(result.packages[0].manifestUrl).toBe('https://catalog.example.test/repo/manifest.json');
+        expect(result.packages[0].manifest?.ipkUrl).toBe('https://catalog.example.test/repo/packages/custom.ipk');
+    });
+
+    it('leaves descriptive prose alone and resolves a valid beta download', async () => {
+        const value = {...customItem, fullDescriptionUrl: undefined, description: 'A short text description', manifestBeta: {
+            id: 'custom.app', version: '2.1.0', ipkUrl: './beta.ipk', ipkHash: {sha256: 'b'.repeat(64)}}};
+        respond({packages: [value]});
+        const result = await firstValueFrom(service().allApps$(0, customUrl));
+        expect(result.packages[0].fullDescriptionUrl).toBeUndefined();
+        expect(result.packages[0].manifestBeta?.ipkUrl).toBe('https://catalog.example.test/repo/beta.ipk');
+    });
+
+    it('accepts an empty custom catalog and checks its app count', async () => {
+        respond({packages: []});
+        expect(await service().checkRepository(customUrl)).toEqual({count: 0});
+        respond({packages: []});
+        expect((await firstValueFrom(service().allApps$(0, customUrl))).packages).toEqual([]);
+    });
+
+    it('filters invalid custom entries, reports the skipped count, and preserves valid apps', async () => {
+        const invalid = {...customItem, id: 'broken.app'};
+        respond({packages: [invalid, customItem]});
+        const result = await firstValueFrom(service().allApps$(0, customUrl));
+        expect(result.skippedCount).toBe(1);
+        expect(result.packages.map(pkg => pkg.id)).toEqual(['custom.app']);
+    });
+
+    it.each([
+        {...customItem, manifest: {...customItem.manifest, ipkHash: {sha256: 'bad'}}},
+        {...customItem, manifest: {...customItem.manifest, ipkUrl: 'http://catalog.example.test/app.ipk'}},
+        {...customItem, manifest: {...customItem.manifest, id: 'different.app'}},
+        {...customItem, manifestBeta: {id: 'custom.app', version: '2.1.0', ipkUrl: './beta.ipk', ipkHash: {sha256: 'bad'}}},
+    ])('rejects unsafe or inconsistent custom package metadata', async value => {
+        respond({packages: [value]});
+        await expect(firstValueFrom(service().allApps$(0, customUrl))).rejects.toThrow('Invalid custom repository catalog');
     });
 
     it('rejects HTTP error JSON instead of accepting it as an empty page', async () => {

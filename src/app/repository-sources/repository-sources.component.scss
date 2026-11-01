@@ -1,0 +1,7 @@
+:host { display: block; }
+.sources-page { max-width: 900px; margin: 0 auto; padding: 28px; }
+h1 { font-size: 1.6rem; font-weight: 600; }
+h2 { font-size: 1.15rem; margin-bottom: 14px; }
+.source-info { min-width: 0; }
+.source-url { overflow-wrap: anywhere; }
+@media (max-width: 575.98px) { .sources-page { padding: 20px; } }

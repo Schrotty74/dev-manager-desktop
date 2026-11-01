@@ -4,6 +4,17 @@ Changes to the [Schrotty74 fork](https://github.com/Schrotty74/dev-manager-deskt
 of webOS Dev Manager are recorded here. Earlier upstream releases are listed in
 the [webosbrew release history](https://github.com/webosbrew/dev-manager-desktop/releases).
 
+## [1.99.23] - 2026-11-01
+
+- Add locally saved custom package sources alongside Homebrew Channel, with a
+  source selector under Apps > Available and management under Settings > Package
+  sources (also accessible from More in compact layouts).
+- Support compatible JSON catalogs with embedded package manifests, including
+  catalogs without pagination and GitHub repository addresses.
+- Add JSON backup and restore for custom sources and the selected catalog.
+  Restoration merges sources, skips duplicate addresses, and validates the full
+  backup before changing settings. TV credentials are not included.
+
 ## [1.99.22] - 2026-11-01
 
 First macOS release of this fork, built for Apple Silicon (arm64).
@@ -57,3 +68,4 @@ First macOS release of this fork, built for Apple Silicon (arm64).
   [Apple's guidance](https://support.apple.com/en-us/102445).
 
 [1.99.22]: https://github.com/Schrotty74/dev-manager-desktop/releases/tag/v1.99.22
+[1.99.23]: https://github.com/Schrotty74/dev-manager-desktop/releases/tag/v1.99.23

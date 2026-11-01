@@ -9,6 +9,7 @@ import {AppModule} from './app.module';
 import {Device} from './types';
 import {UpdateService} from './core/services';
 import {AppearanceService} from './core/services/appearance.service';
+import {RepositorySourcesService} from './core/services/repository-sources.service';
 import ReleaseInfo from '../release.json';
 import packageInfo from '../../package.json';
 import {mockBackend, resetBackend} from '../testing/tauri-mock';
@@ -185,6 +186,36 @@ describe('App (mocked backend e2e)', () => {
             expect(fixture.nativeElement.querySelector('input[value="nord"]').checked).toBe(true);
         } finally {
             appearance.setTheme(original);
+        }
+    });
+
+    it('opens package sources from Settings and restores a portable source backup', async () => {
+        boot();
+        await router.navigate(['/home/devices']);
+        await settle();
+        fixture.nativeElement.querySelector('[aria-label="Settings"]').click();
+        await settle();
+        fixture.nativeElement.querySelector('.dropdown-menu.show a[href="/home/repositories"]').click();
+        await settle();
+        expect(router.url).toBe('/home/repositories');
+        const sources = TestBed.inject(RepositorySourcesService);
+        const name = fixture.nativeElement.querySelector('#source-name') as HTMLInputElement;
+        const url = fixture.nativeElement.querySelector('#source-url') as HTMLInputElement;
+        name.value = 'Example apps';
+        url.value = 'https://example.test/repo.json';
+        name.dispatchEvent(new Event('input', {bubbles: true}));
+        url.dispatchEvent(new Event('input', {bubbles: true}));
+        fixture.nativeElement.querySelector('app-repository-sources form').dispatchEvent(new Event('submit', {bubbles: true, cancelable: true}));
+        await settle();
+        try {
+            expect(fixture.nativeElement.querySelector('app-repository-sources').textContent).toContain('Example apps');
+            const text = sources.exportBackup();
+            sources.remove(url.value);
+            expect(sources.restoreBackup(text)).toBe(1);
+            expect(sources.restoreBackup(text)).toBe(0);
+            expect(sources.sources().filter(source => source.url === url.value).length).toBe(1);
+        } finally {
+            sources.remove(url.value);
         }
     });
 

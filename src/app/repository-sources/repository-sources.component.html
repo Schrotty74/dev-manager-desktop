@@ -1,0 +1,40 @@
+<section class="sources-page" aria-labelledby="sources-heading">
+  <h1 id="sources-heading">Package sources</h1>
+  <p class="text-body-secondary">Add your own app catalogs alongside Homebrew Channel. Select a source under Apps &gt; Available.</p>
+  @if (sources.storageWarning()) { <p class="alert alert-warning" role="status">{{ sources.storageWarning() }}</p> }
+  @if (error()) { <p class="alert alert-danger" role="alert">{{ error() }}</p> }
+  @if (status()) { <p class="alert alert-success" role="status">{{ status() }}</p> }
+  <ul class="list-group mb-4">
+    @for (source of sources.sources(); track source.id) {
+      <li class="list-group-item d-flex gap-3 align-items-center">
+        <div class="source-info flex-fill">
+          <strong>{{ source.name }}</strong>
+          @if (source.builtIn) { <span class="badge text-bg-secondary ms-2">Default</span> }
+          <div class="small text-body-secondary source-url">{{ source.url }}</div>
+        </div>
+        @if (!source.builtIn) {
+          <button type="button" class="btn btn-outline-danger btn-sm" [attr.aria-label]="'Remove ' + source.name"
+                  [disabled]="busy()" (click)="sources.remove(source.id)">Remove</button>
+        }
+      </li>
+    }
+  </ul>
+  <form (submit)="addSource($event)" class="mb-4">
+    <h2>Add source</h2>
+    <label for="source-name" class="form-label">Name</label>
+    <input id="source-name" name="source-name" class="form-control mb-3" maxlength="80" required
+           [value]="name()" (input)="name.set($any($event.target).value)" placeholder="My apps">
+    <label for="source-url" class="form-label">HTTPS catalog URL or GitHub repository</label>
+    <input id="source-url" name="source-url" class="form-control mb-3" type="url" required
+           [value]="url()" (input)="url.set($any($event.target).value)" placeholder="https://example.com/repo.json">
+    <button type="submit" class="btn btn-primary" [disabled]="busy() || !name().trim() || !url().trim()">Add source</button>
+  </form>
+  <h2>Backup and restore</h2>
+  <p class="text-body-secondary">Save your custom sources as a JSON file and restore them on another Mac. Restoring merges the sources without removing existing ones. This backup contains source names and addresses, not TV credentials.</p>
+  <div class="d-flex gap-2 flex-wrap">
+    <button type="button" class="btn btn-outline-primary" [disabled]="busy()" (click)="backup()">Back up sources</button>
+    <button type="button" class="btn btn-outline-secondary" [disabled]="busy()" (click)="backupFile.click()">Restore sources</button>
+    <input #backupFile class="visually-hidden" type="file" accept="application/json,.json" aria-label="Choose sources backup"
+           [disabled]="busy()" (change)="restore($event)">
+  </div>
+</section>

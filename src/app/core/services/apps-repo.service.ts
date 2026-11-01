@@ -7,6 +7,7 @@ import {DeviceInfo} from "./device-manager.service";
 import semver from "semver/preload";
 import {HomebrewChannelConfiguration} from "../../types/luna-apis";
 import {fromPromise} from "rxjs/internal/observable/innerFrom";
+import {normalizeRepositoryUrl} from './repository-url';
 
 const baseUrl = 'https://repo.webosbrew.org/api';
 const requestTimeoutMs = 30_000;
@@ -61,6 +62,73 @@ function validatePage(data: any): asserts data is RepositoryPage {
     }
 }
 
+function validCustomPackage(item: any, catalogUrl: string): boolean {
+    const manifest = item?.manifest;
+    if (!item || Array.isArray(item) || typeof item !== 'object' ||
+        typeof item.id !== 'string' || !item.id.trim() ||
+        typeof manifest?.id !== 'string' || manifest.id !== item.id ||
+        typeof manifest.version !== 'string' || !manifest.version.trim() ||
+        typeof manifest.ipkUrl !== 'string' ||
+        typeof manifest.ipkHash?.sha256 !== 'string' || !/^[\da-f]{64}$/i.test(manifest.ipkHash.sha256)) return false;
+    try {
+        const ipkUrl = new URL(manifest.ipkUrl, catalogUrl);
+        return ipkUrl.protocol === 'https:' && !ipkUrl.username && !ipkUrl.password;
+    } catch {
+        return false;
+    }
+}
+
+function validOptionalManifestDownload(manifest: any, catalogUrl: string, appId: string): boolean {
+    if (!manifest || manifest.ipkUrl === undefined) return true;
+    if (manifest.id !== undefined && manifest.id !== appId || typeof manifest.ipkUrl !== 'string' ||
+        typeof manifest.ipkHash?.sha256 !== 'string' || !/^[\da-f]{64}$/i.test(manifest.ipkHash.sha256)) return false;
+    try {
+        const ipkUrl = new URL(manifest.ipkUrl, catalogUrl);
+        return ipkUrl.protocol === 'https:' && !ipkUrl.username && !ipkUrl.password;
+    } catch {
+        return false;
+    }
+}
+
+function validateCustomCatalog(data: any, catalogUrl: string): {packages: any[]; paging: Paging; skippedCount: number} {
+    const sourcePackages = Array.isArray(data) ? data : data?.packages;
+    if (!Array.isArray(sourcePackages)) {
+        throw new Error('Invalid custom repository catalog. Expected an array of packages.');
+    }
+    const packages = sourcePackages.filter(item => validCustomPackage(item, catalogUrl) &&
+        validOptionalManifestDownload(item.manifestBeta, catalogUrl, item.id));
+    const skippedCount = sourcePackages.length - packages.length;
+    if (sourcePackages.length > 0 && packages.length === 0) {
+        throw new Error('Invalid custom repository catalog. No packages have valid manifests, HTTPS IPK URLs, and SHA-256 hashes.');
+    }
+    if (data && !Array.isArray(data) && data.paging !== undefined) {
+        validatePage({...data, packages});
+        return {packages, paging: data.paging, skippedCount};
+    }
+    const count = packages.length;
+    return {packages, paging: {page: 1, count, maxPage: count ? 1 : 0, itemsTotal: count}, skippedCount};
+}
+
+function resolveCustomPackage(item: any, catalogUrl: string): any {
+    const result = {...item};
+    result.iconUri = typeof item.iconUri === 'string' && item.iconUri
+        ? new URL(item.iconUri, catalogUrl).toString() : 'assets/icons/favicon.png';
+    if (typeof item.detailIconUri === 'string') result.detailIconUri = new URL(item.detailIconUri, catalogUrl).toString();
+    else if (typeof item.detailIcon === 'string') result.detailIconUri = new URL(item.detailIcon, catalogUrl).toString();
+    const descriptionUrl = item.fullDescriptionUrl ?? item.descriptionUrl;
+    if (typeof descriptionUrl === 'string') result.fullDescriptionUrl = new URL(descriptionUrl, catalogUrl).toString();
+    const manifestUrl = item.manifestUrl ?? item.manifestURL;
+    if (typeof manifestUrl === 'string') result.manifestUrl = new URL(manifestUrl, catalogUrl).toString();
+    result.manifest = {...item.manifest, ipkUrl: new URL(item.manifest.ipkUrl, catalogUrl).toString()};
+    if (item.manifestBeta) {
+        result.manifestBeta = {...item.manifestBeta};
+        if (typeof result.manifestBeta.ipkUrl === 'string') {
+            result.manifestBeta.ipkUrl = new URL(result.manifestBeta.ipkUrl, catalogUrl).toString();
+        }
+    }
+    return result;
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -85,13 +153,29 @@ export class AppsRepoService {
             .then((list: RepositoryItem[]) => keyBy(list, pkg => pkg.id));
     }
 
-    allApps$(page = 0): Observable<RepositoryPage> {
+    allApps$(page = 0, catalogUrl?: string): Observable<RepositoryPage> {
+        if (catalogUrl !== undefined) {
+            const normalizedUrl = normalizeRepositoryUrl(catalogUrl);
+            const url = page > 1 ? new URL(`apps/${page}.json`, normalizedUrl).toString() : normalizedUrl;
+            return fromPromise(requestJson(url).then(data => {
+                const parsed = validateCustomCatalog(data, url);
+                return new RepositoryPage({paging: parsed.paging,
+                    packages: parsed.packages.map(item => resolveCustomPackage(item, url)),
+                    skippedCount: parsed.skippedCount}, url);
+            }));
+        }
         const suffix = page > 1 ? `apps/${page}.json` : 'apps.json';
         const url = `${baseUrl}/${suffix}`;
         return fromPromise(requestJson(url).then(data => {
             validatePage(data);
             return new RepositoryPage(data, url);
         }));
+    }
+
+    async checkRepository(catalogUrl: string): Promise<{count: number}> {
+        const url = normalizeRepositoryUrl(catalogUrl);
+        const parsed = validateCustomCatalog(await requestJson(url), url);
+        return {count: parsed.packages.length};
     }
 }
 
@@ -210,9 +294,11 @@ export interface Paging {
 export class RepositoryPage {
     paging: Paging;
     packages: RepositoryItem[];
+    skippedCount: number = 0;
 
     constructor(data: Partial<RepositoryPage>, url: string) {
         this.paging = data.paging!;
         this.packages = data.packages?.map((item) => new RepositoryItem(item, url)) ?? [];
+        this.skippedCount = data.skippedCount ?? 0;
     }
 }

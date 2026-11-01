@@ -1,7 +1,20 @@
+<div class="d-flex align-items-center gap-2 flex-wrap mb-3">
+  <label for="package-source" class="form-label mb-0">Source</label>
+  <select id="package-source" class="form-select source-select" [value]="sources.selectedId()"
+          (change)="sources.select($any($event.target).value)">
+    @for (source of sources.sources(); track source.id) {
+      <option [value]="source.id">{{ source.name }}</option>
+    }
+  </select>
+  <a routerLink="/home/repositories" class="ms-sm-auto">Manage sources</a>
+</div>
 @let repoPage = repoPage$ | async;
 @if (repoError) {
   <app-error-card title="Unable to load available apps" [error]="repoError" (retry)="loadPage(page)"/>
 } @else if (repoPage) {
+  @if (repoPage.skippedCount) {
+    <p class="text-body-secondary" role="status">{{ repoPage.skippedCount }} entries were skipped because their package information or checksum is invalid.</p>
+  }
   <ul class="list-group list-group-flush">
     @for (item of repoPage.packages; track item) {
       <li class="list-group-item app-item d-flex flex-row align-items-center" (click)="parent.openDetails(item)"
