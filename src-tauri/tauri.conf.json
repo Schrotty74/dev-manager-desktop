@@ -88,7 +88,9 @@
       "signingIdentity": "-",
       "minimumSystemVersion": "10.15"
     },
-    "resources": [],
+    "resources": {
+      "../LICENSE": "LICENSE"
+    },
     "shortDescription": "Device/Dev Mode Manager for webOS TV",
     "targets": "all",
     "windows": {
