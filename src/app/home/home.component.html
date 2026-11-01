@@ -1,51 +1,71 @@
-<div class="d-flex flex-column-reverse flex-sm-row h-100" (drop)="defaultDrop($event)"
+<div class="app-shell d-flex flex-column-reverse flex-sm-row h-100" (drop)="defaultDrop($event)"
      (dragover)="defaultDragOver($event)" (dragenter)="defaultDragEnter($event)" (dragleave)="defaultDragLeave($event)">
-  <nav class="d-flex flex-row flex-sm-column bg-panel border-end" #appNav>
+  <nav class="app-sidebar d-flex flex-row flex-sm-column bg-panel border-end" aria-label="Main navigation" #appNav>
+    <div class="app-brand"><span>webOS</span><small>Dev Manager</small></div>
     <ul class="nav nav-pills flex-row flex-nowrap flex-sm-column me-auto mb-sm-auto w-100 justify-content-evenly">
       <li class="nav-item">
-        <a class="nav-link" routerLink="apps" routerLinkActive="active" replaceUrl ngbTooltip="Apps"
+        <a class="nav-link" routerLink="apps" routerLinkActive="active" replaceUrl aria-label="Apps" ngbTooltip="Apps"
            [placement]="appNavTooltipDirection">
-          <i class="bi bi-grid"></i>
+          <i class="bi bi-grid" aria-hidden="true"></i><span class="nav-label">Apps</span>
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" routerLink="files" routerLinkActive="active" replaceUrl ngbTooltip="Files"
+        <a class="nav-link" routerLink="files" routerLinkActive="active" replaceUrl aria-label="Files" ngbTooltip="Files"
            [placement]="appNavTooltipDirection">
-          <i class="bi bi-folder"></i>
+          <i class="bi bi-folder" aria-hidden="true"></i><span class="nav-label">Files</span>
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" routerLink="terminal" routerLinkActive="active" replaceUrl ngbTooltip="Terminal"
+        <a class="nav-link" routerLink="terminal" routerLinkActive="active" replaceUrl aria-label="Terminal" ngbTooltip="Terminal"
            [placement]="appNavTooltipDirection">
-          <i class="bi bi-terminal"></i>
+          <i class="bi bi-terminal" aria-hidden="true"></i><span class="nav-label">Terminal</span>
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" routerLink="info" routerLinkActive="active" replaceUrl ngbTooltip="Info"
+        <a class="nav-link" routerLink="info" routerLinkActive="active" replaceUrl aria-label="Info" ngbTooltip="Info"
            [placement]="appNavTooltipDirection">
-          <i class="bi bi-info-circle"></i>
+          <i class="bi bi-info-circle" aria-hidden="true"></i><span class="nav-label">Info</span>
         </a>
       </li>
       <li class="nav-item d-none d-sm-block">
-        <a class="nav-link" routerLink="debug" routerLinkActive="active" replaceUrl ngbTooltip="Debug"
+        <a class="nav-link" routerLink="debug" routerLinkActive="active" replaceUrl aria-label="Debug" ngbTooltip="Debug"
            [placement]="appNavTooltipDirection">
-          <i class="bi bi-bug"></i>
+          <i class="bi bi-bug" aria-hidden="true"></i><span class="nav-label">Debug</span>
         </a>
       </li>
       <li class="nav-item d-block d-sm-none">
-        <a class="nav-link" routerLink="nav-more" routerLinkActive="active" replaceUrl ngbTooltip="More"
+        <a class="nav-link" routerLink="nav-more" routerLinkActive="active" replaceUrl aria-label="More" ngbTooltip="More"
            [placement]="appNavTooltipDirection">
-          <i class="bi bi-three-dots"></i>
+          <i class="bi bi-three-dots" aria-hidden="true"></i><span class="nav-label">More</span>
         </a>
       </li>
     </ul>
 
     <ul class="nav flex-column mb-sm-2 d-none d-sm-block">
+      @if (glassFullscreen.supported) {
+        <li class="nav-item">
+          <button type="button" class="nav-link fullscreen-toggle w-100 text-start"
+                  [attr.aria-pressed]="glassFullscreen.active()"
+                  [attr.aria-label]="glassFullscreen.active() ? 'Glas-Vollbild beenden' : 'Glas-Vollbild starten'"
+                  [ngbTooltip]="glassFullscreen.active() ? 'Glas-Vollbild beenden (Esc)' : 'Glas-Vollbild starten'"
+                  [placement]="appNavTooltipDirection"
+                  [disabled]="glassFullscreen.pending() || !glassFullscreen.available()"
+                  (click)="glassFullscreen.toggle()">
+            <i class="bi" [class.bi-fullscreen]="!glassFullscreen.active()"
+               [class.bi-fullscreen-exit]="glassFullscreen.active()" aria-hidden="true"></i>
+            <span class="nav-label">{{ glassFullscreen.active() ? 'Vollbild beenden' : 'Glas-Vollbild' }}</span>
+          </button>
+        </li>
+        @if (glassFullscreen.error()) {
+          <li class="small text-danger px-2" role="status">{{ glassFullscreen.error() }}</li>
+        }
+      }
       <li class="nav-item" ngbDropdown placement="auto">
         <a class="nav-link" ngbDropdownToggle aria-label="Settings">
-          <i class="bi bi-gear"></i>
+          <i class="bi bi-gear" aria-hidden="true"></i><span class="nav-label">Settings</span>
         </a>
         <div ngbDropdownMenu>
+          <a ngbDropdownItem routerLink="appearance" replaceUrl>Appearance</a>
           <a ngbDropdownItem routerLink="devices" replaceUrl>Devices</a>
           <a ngbDropdownItem routerLink="nav-more" replaceUrl>About this app</a>
         </div>
@@ -53,7 +73,7 @@
     </ul>
   </nav>
 
-  <main role="main" class="flex-fill ms-sm-auto p-0 overflow-auto">
+  <main role="main" class="app-content flex-fill ms-sm-auto p-0 overflow-auto">
     <router-outlet></router-outlet>
   </main>
 </div>

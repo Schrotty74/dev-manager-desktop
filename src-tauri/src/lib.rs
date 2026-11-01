@@ -20,6 +20,8 @@ mod conn_pool;
 mod device_manager;
 mod error;
 mod event_channel;
+#[cfg(target_os = "macos")]
+mod glass_fullscreen;
 mod plugins;
 mod remote_files;
 mod session_manager;
@@ -32,6 +34,13 @@ mod tests;
 pub fn run() {
     let mut builder = tauri::Builder::default();
     builder = optional_setup(builder);
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder.invoke_handler(tauri::generate_handler![
+            glass_fullscreen::glass_fullscreen_state,
+            glass_fullscreen::set_glass_fullscreen
+        ]);
+    }
     let result = builder
         .plugin(tauri_plugin_log::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
@@ -64,6 +73,10 @@ pub fn run() {
         .and_then(|app| {
             app.run(|app, event| match event {
                 RunEvent::Ready => {
+                    #[cfg(target_os = "macos")]
+                    if let Err(error) = glass_fullscreen::install(app) {
+                        log::error!("Cannot install glass fullscreen menu: {error}");
+                    }
                     if let Some(dir) = app_dirs::ssh_dir(app) {
                         app.state::<DeviceManager>().ssh_dir.set(dir.clone());
                         app.state::<SessionManager>().ssh_dir.set(dir.clone());
@@ -84,7 +97,7 @@ pub fn run() {
 
 #[cfg(feature = "desktop")]
 fn handle_error(e: &tauri::Error) {
-    use native_dialog::{MessageDialog, MessageType};
+    use native_dialog::{DialogBuilder, MessageLevel};
     fn error_message(err: &tauri::Error) -> String {
         #[cfg(windows)]
         if let tauri::Error::Runtime(ref e) = *err {
@@ -95,11 +108,12 @@ fn handle_error(e: &tauri::Error) {
         format!("Unexpected error occurred: {:?}", err)
     }
     let msg = error_message(e);
-    MessageDialog::new()
-        .set_type(MessageType::Error)
+    DialogBuilder::message()
+        .set_level(MessageLevel::Error)
         .set_title("webOS Dev Manager")
         .set_text(&msg)
-        .show_alert()
+        .alert()
+        .show()
         .expect("Unexpected error occurred while processing unexpected error :(");
 }
 
@@ -154,4 +168,3 @@ impl<R: Runtime> GetAppSshKeyDir for AppHandle<R> {
             })
     }
 }
-

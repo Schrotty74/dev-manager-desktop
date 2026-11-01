@@ -1,0 +1,26 @@
+<section class="appearance-page" aria-labelledby="appearance-heading">
+  <header>
+    <h1 id="appearance-heading">Appearance</h1>
+    <p class="text-body-secondary">Choose a theme. Changes are saved automatically.</p>
+  </header>
+  <fieldset>
+    <legend>Theme</legend>
+    <div class="theme-options">
+      @for (theme of themes; track theme.id) {
+        <label class="theme-choice" [class.selected]="appearance.theme() === theme.id">
+          <div class="theme-preview" [class]="'theme-preview preview-' + theme.id" aria-hidden="true">
+            <div class="preview-sidebar"><span></span><span></span><span></span></div>
+            <div class="preview-content"><span></span><span></span><span></span></div>
+          </div>
+          <div class="theme-heading">
+            <input class="form-check-input" type="radio" name="app-theme" [value]="theme.id"
+                   [checked]="appearance.theme() === theme.id" (change)="appearance.setTheme(theme.id)"
+                   [attr.aria-describedby]="'theme-description-' + theme.id">
+            <span>{{ theme.label }}</span>
+          </div>
+          <p class="text-body-secondary" [id]="'theme-description-' + theme.id">{{ theme.description }}</p>
+        </label>
+      }
+    </div>
+  </fieldset>
+</section>

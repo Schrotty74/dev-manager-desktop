@@ -5,6 +5,11 @@ import {AppModule} from './app/app.module';
 import {AppConfig} from './environments/environment';
 import ReleaseInfo from './release.json';
 import {browserTracingIntegration, defaultStackParser, init as initSentry} from "@sentry/angular";
+import {isTauri} from '@tauri-apps/api/core';
+import {platform} from '@tauri-apps/plugin-os';
+
+// Only the macOS window has a native material behind the webview.
+document.documentElement.setAttribute('data-platform', isTauri() ? platform() : 'web');
 
 initSentry({
     dsn: "https://93c623f5a47940f0b7bac7d0d5f6a91f@o4504977150377984.ingest.sentry.io/4504978685689856",
@@ -48,16 +53,3 @@ if (AppConfig.production) {
 platformBrowserDynamic()
     .bootstrapModule(AppModule, { applicationProviders: [provideZoneChangeDetection()], preserveWhitespaces: false,})
     .catch(err => console.error(err));
-
-const darkTheme = window.matchMedia('(prefers-color-scheme: dark)');
-
-document.documentElement.setAttribute('data-bs-theme', darkTheme.matches ? 'dark' : 'light');
-if (darkTheme.addEventListener) {
-    darkTheme.addEventListener('change', (media) => {
-        document.documentElement.setAttribute('data-bs-theme', media.matches ? 'dark' : 'light');
-    });
-} else {
-    // noinspection JSDeprecatedSymbols
-    darkTheme.addListener?.((ev) => document.documentElement.setAttribute(
-        'data-bs-theme', ev.matches ? 'dark' : 'light'));
-}

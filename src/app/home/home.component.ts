@@ -10,6 +10,7 @@ import {isNonNull} from "../shared/operators";
 import ReleaseInfo from '../../release.json';
 import {DeviceChooserComponent} from "./device-chooser/device-chooser.component";
 import {DevicesComponent} from "../devices/devices.component";
+import {GlassFullscreenService} from '../core/services/glass-fullscreen.service';
 
 @Component({
     selector: 'app-home',
@@ -28,7 +29,8 @@ export class HomeComponent implements OnInit {
 
     constructor(
         public deviceManager: DeviceManagerService,
-        private modalService: NgbModal
+        private modalService: NgbModal,
+        public glassFullscreen: GlassFullscreenService
     ) {
         deviceManager.devices$.pipe(filter(isNonNull)).subscribe((devices) => {
             this.selectedDevice = devices.find((device) => device.default) || devices[0];

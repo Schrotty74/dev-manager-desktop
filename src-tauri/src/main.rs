@@ -4,12 +4,5 @@
 )]
 
 fn main() {
-    #[cfg(feature = "desktop")]
-    {
-        use log::LevelFilter;
-        env_logger::builder()
-            .filter_level(LevelFilter::Debug)
-            .init();
-    }
     devman::run();
 }

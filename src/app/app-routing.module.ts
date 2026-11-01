@@ -19,6 +19,7 @@ const routes: Routes = [
             {path: 'debug', loadChildren: () => import('./debug').then(m => m.DebugModule)},
             {path: 'info', loadChildren: () => import('./info').then(m => m.InfoModule)},
             {path: 'devices', loadComponent: () => import('./devices/devices.component').then(m => m.DevicesComponent)},
+            {path: 'appearance', loadComponent: () => import('./appearance/appearance.component').then(m => m.AppearanceComponent)},
             {path: 'nav-more', component: NavMoreComponent},
             {path: '', redirectTo: 'apps', pathMatch: 'full'},
         ]

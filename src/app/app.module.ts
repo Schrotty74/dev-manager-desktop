@@ -27,6 +27,7 @@ import {NgOptimizedImage} from "@angular/common";
 import {Router} from "@angular/router";
 import {createErrorHandler, TraceService} from "@sentry/angular";
 import {ExternalLinkDirective} from "./shared/directives";
+import {AppearanceService} from './core/services/appearance.service';
 
 @NgModule({
     declarations: [
@@ -70,6 +71,7 @@ import {ExternalLinkDirective} from "./shared/directives";
         },
         // Instantiates TraceService so Sentry starts recording router navigations.
         provideAppInitializer(() => {
+            inject(AppearanceService);
             inject(TraceService);
         }),
         NgbTooltipConfig,

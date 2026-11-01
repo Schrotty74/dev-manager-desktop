@@ -1,0 +1,188 @@
+// macOS supplies the native glass material behind the webview.
+// No CSS blur is used to simulate it.
+:root {
+  --app-canvas: #eef1f6;
+  --app-content: #f7f8fb;
+  --app-panel: #e9edf4;
+  --app-surface: #fff;
+  --app-selection: #dbe8fd;
+  --app-selection-text: #174c91;
+  --app-border: rgba(40, 59, 88, .12);
+  --app-accent: #2163bd;
+  --app-accent-hover: #194e99;
+  --app-accent-text: #fff;
+  --bs-primary: var(--app-accent);
+  --bs-primary-rgb: 33, 99, 189;
+  --bs-body-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --bs-body-color: #253248;
+  --bs-body-bg: var(--app-canvas);
+  --bs-border-color: var(--app-border);
+  --bs-secondary-color: #58677c;
+  --bs-border-radius: .65rem;
+}
+:root[data-bs-theme='dark'] {
+  --app-canvas: #20252e;
+  --app-content: #252b35;
+  --app-panel: #2d3541;
+  --app-surface: #303946;
+  --app-selection: #354d70;
+  --app-selection-text: #dceaff;
+  --app-border: rgba(220, 232, 250, .14);
+  --bs-body-color: #e4ebf5;
+  --bs-secondary-color: #a8b6c9;
+}
+:root[data-platform='macos'] {
+  --app-canvas: transparent;
+  --app-panel: rgba(240, 244, 250, .22);
+  --app-content: rgba(249, 250, 253, .87);
+  --app-surface: rgba(255, 255, 255, .93);
+  &, body { background: transparent; }
+  &[data-bs-theme='dark'] {
+    --app-panel: rgba(35, 43, 56, .18);
+    --app-content: rgba(30, 37, 48, .89);
+    --app-surface: rgba(43, 53, 68, .95);
+  }
+}
+// Fixed dark palettes override the macOS material's surface colors.
+:root[data-app-theme='graphite'][data-bs-theme='dark'] {
+  --app-canvas: #1b1d22;
+  --app-content: #20242b;
+  --app-panel: #282d36;
+  --app-surface: #2b313c;
+  --app-selection: #35445e;
+  --app-selection-text: #e0eaff;
+  --app-border: rgba(216, 228, 248, .15);
+  --app-accent: #b3caff;
+  --app-accent-hover: #c9d9ff;
+  --app-accent-text: #17233c;
+  --bs-body-color: #edf0f4;
+  --bs-secondary-color: #b0bbcb;
+  --bs-primary-rgb: 179, 202, 255;
+}
+:root[data-app-theme='nord'][data-bs-theme='dark'] {
+  --app-canvas: #2e3440;
+  --app-content: #343c4a;
+  --app-panel: #3b4252;
+  --app-surface: #434c5e;
+  --app-selection: #4c566a;
+  --app-selection-text: #eceff4;
+  --app-border: rgba(216, 222, 233, .18);
+  --app-accent: #88c0d0;
+  --app-accent-hover: #a0d1de;
+  --app-accent-text: #243644;
+  --bs-body-color: #eceff4;
+  --bs-secondary-color: #c3cedd;
+  --bs-primary-rgb: 136, 192, 208;
+}
+:root[data-app-theme='macos-clear'][data-bs-theme='light'] {
+  --app-canvas: #f0f1f4;
+  --app-content: #fafbfc;
+  --app-panel: #e7eaf0;
+  --app-surface: #fff;
+  --app-accent: #1764c0;
+  --app-accent-hover: #124f98;
+  --bs-primary-rgb: 23, 100, 192;
+}
+:root[data-app-theme='macos-clear'][data-bs-theme='dark'] {
+  --app-canvas: #22262e;
+  --app-content: #292e38;
+  --app-panel: #313744;
+  --app-surface: #353d4a;
+}
+.appearance-page {
+  .preview-glass { background: linear-gradient(125deg, #b8d5ed, #e0d2ef); --preview-panel: #ffffff66; }
+  .preview-graphite { --preview-base: #1b1d22; --preview-panel: #303640; --preview-surface: #252932; --preview-accent: #b3caff; }
+  .preview-nord { --preview-base: #2e3440; --preview-panel: #4c566a; --preview-surface: #3b4252; --preview-accent: #88c0d0; }
+  .preview-macos-clear { --preview-base: #f0f1f4; --preview-panel: #d5dbe4; --preview-surface: #fff; --preview-accent: #1764c0; }
+}
+body { -webkit-font-smoothing: antialiased; }
+.app-shell {
+  background: var(--app-canvas);
+  .app-sidebar.bg-panel { background: var(--app-panel) !important; }
+  .app-content {
+    margin: 8px 8px 8px 0;
+    border: 1px solid var(--app-border);
+    border-radius: 16px;
+    background: var(--app-content);
+    overflow: hidden;
+  }
+  .bg-panel { background: var(--app-panel) !important; }
+  .manager-toolbar { gap: 8px; }
+  .nav-pills {
+    --bs-nav-pills-link-active-bg: var(--app-selection);
+    --bs-nav-pills-link-active-color: var(--app-selection-text);
+  }
+  .app-sidebar .nav-link:hover { background: var(--app-selection); }
+  .app-sidebar .nav-link:focus-visible {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+  }
+  .card, .list-group {
+    --bs-card-bg: var(--app-surface);
+    --bs-card-border-color: var(--app-border);
+    --bs-list-group-bg: var(--app-surface);
+    --bs-list-group-border-color: var(--app-border);
+  }
+  .table { --bs-table-bg: var(--app-surface); }
+  .btn { font-weight: 500; }
+  .btn-primary {
+    --bs-btn-color: var(--app-accent-text);
+    --bs-btn-bg: var(--app-accent);
+    --bs-btn-border-color: var(--app-accent);
+    --bs-btn-hover-color: var(--app-accent-text);
+    --bs-btn-hover-bg: var(--app-accent-hover);
+    --bs-btn-hover-border-color: var(--app-accent-hover);
+    --bs-btn-active-color: var(--app-accent-text);
+    --bs-btn-active-bg: var(--app-accent-hover);
+    --bs-btn-active-border-color: var(--app-accent-hover);
+    --bs-btn-disabled-color: var(--app-accent-text);
+    --bs-btn-disabled-bg: var(--app-accent);
+    --bs-btn-disabled-border-color: var(--app-accent);
+  }
+  .form-select, .form-control {
+    background-color: var(--app-surface);
+    border-color: var(--app-border);
+  }
+  li.app-item .app-desc .app-headline .app-title {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  li.app-item { padding-top: 14px; padding-bottom: 14px; }
+  li.app-item .app-icon { border-radius: 10px; }
+}
+// ng-bootstrap mounts these outside the app shell.
+:root[data-app-theme='glass'] .tooltip {
+  // Bootstrap's inverse tooltip text uses --bs-body-bg, which is transparent
+  // for native glass. Use the theme's readable foreground and surface instead.
+  --bs-tooltip-color: var(--bs-body-color);
+  --bs-tooltip-bg: var(--app-surface);
+}
+
+.dropdown-menu, .modal-content {
+  --bs-dropdown-bg: var(--app-surface);
+  --bs-dropdown-link-color: var(--bs-body-color);
+  --bs-dropdown-link-hover-bg: var(--app-selection);
+  --bs-dropdown-link-hover-color: var(--app-selection-text);
+  --bs-dropdown-link-active-bg: var(--app-selection);
+  --bs-dropdown-link-active-color: var(--app-selection-text);
+  --bs-modal-bg: var(--app-surface);
+  --bs-modal-border-color: var(--app-border);
+}
+@media (max-width: 575.98px) {
+  .app-shell .app-content { margin: 6px 6px 0; border-radius: 12px; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root[data-platform='macos'][data-app-theme='glass'] {
+    --app-content: #f7f8fb;
+    --app-panel: #e9edf4;
+    --app-surface: #fff;
+    &[data-bs-theme='dark'] {
+      --app-content: #252b35;
+      --app-panel: #2d3541;
+      --app-surface: #303946;
+    }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-shell *, .modal, .modal-backdrop { transition: none !important; }
+}

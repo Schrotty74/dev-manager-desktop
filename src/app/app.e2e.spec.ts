@@ -8,6 +8,7 @@ import {AppComponent} from './app.component';
 import {AppModule} from './app.module';
 import {Device} from './types';
 import {UpdateService} from './core/services';
+import {AppearanceService} from './core/services/appearance.service';
 import ReleaseInfo from '../release.json';
 import packageInfo from '../../package.json';
 import {mockBackend, resetBackend} from '../testing/tauri-mock';
@@ -154,6 +155,37 @@ describe('App (mocked backend e2e)', () => {
         expect(aboutPage.textContent).toContain('About this app');
         expect(aboutPage.querySelector('.text-secondary')?.textContent).toBe(expectedVersion);
         expect(remoteCommand).not.toHaveBeenCalled();
+    });
+
+    it('opens Appearance from Settings and keeps the selected theme across navigation', async () => {
+        boot();
+        await router.navigate(['/home/devices']);
+        await settle();
+
+        fixture.nativeElement.querySelector('[aria-label="Settings"]').click();
+        await settle();
+        const link = fixture.nativeElement.querySelector('.dropdown-menu.show a[href="/home/appearance"]') as HTMLAnchorElement;
+        expect(link?.textContent).toBe('Appearance');
+        link.click();
+        await settle();
+
+        const appearance = TestBed.inject(AppearanceService);
+        const original = appearance.theme();
+        try {
+            expect(router.url).toBe('/home/appearance');
+            expect(fixture.nativeElement.querySelectorAll('input[name="app-theme"]').length).toBe(4);
+            fixture.nativeElement.querySelector('input[value="nord"]').click();
+            await settle();
+            expect(document.documentElement.getAttribute('data-app-theme')).toBe('nord');
+            expect(document.documentElement.getAttribute('data-bs-theme')).toBe('dark');
+
+            await router.navigate(['/home/devices']);
+            await router.navigate(['/home/appearance']);
+            await settle();
+            expect(fixture.nativeElement.querySelector('input[value="nord"]').checked).toBe(true);
+        } finally {
+            appearance.setTheme(original);
+        }
     });
 
     // Not covered here: a failing `device-manager/list` at startup. `DeviceManagerService.load()`
