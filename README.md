@@ -26,19 +26,19 @@ Manage sources and JSON backups under **Settings > Package sources** (also acces
 
 See the [macOS build instructions](src-tauri/README.md) and [changelog](CHANGELOG.md).
 
-Screenshots below are from the upstream project and may not show this fork's current interface.
+## Screenshots
 
-![Add device (upstream screenshot)](https://user-images.githubusercontent.com/830358/215522596-196d9629-3942-4533-bebb-5a81ba62ebc0.png)
+Click a preview to view the full-size screenshot.
 
-![Installed apps (upstream screenshot)](https://user-images.githubusercontent.com/830358/215522298-eadebc84-661b-40ad-b6a9-9379710f88dc.png)
-
-![Install from Homebrew catalog (upstream screenshot)](https://user-images.githubusercontent.com/830358/215523117-0fdbde24-a503-4eed-8e2f-50a3486ce7f7.png)
-
-![Manage files (upstream screenshot)](https://user-images.githubusercontent.com/830358/215522354-50997437-e3de-43a9-89cc-52cdaecb0502.png)
-
-![Built-in terminal (upstream screenshot)](https://user-images.githubusercontent.com/830358/215522468-bc3e4871-01b2-4eed-a8b2-31f683874ba1.png)
-
-![Device information (upstream screenshot)](https://user-images.githubusercontent.com/830358/215522554-5554a89b-ff3e-455e-8ed7-0f28c03f04a9.png)
+<p>
+  <a href="docs/screenshots/device-setup.png"><img src="docs/screenshots/device-setup.png" alt="Device setup" width="320"></a>
+  <a href="docs/screenshots/appearance.png"><img src="docs/screenshots/appearance.png" alt="Appearance and themes" width="320"></a>
+  <a href="docs/screenshots/sources-backup.png"><img src="docs/screenshots/sources-backup.png" alt="Package sources and backups" width="320"></a>
+  <a href="docs/screenshots/file-manager.png"><img src="docs/screenshots/file-manager.png" alt="TV file manager" width="320"></a>
+  <a href="docs/screenshots/ssh-terminal.png"><img src="docs/screenshots/ssh-terminal.png" alt="Built-in SSH terminal" width="320"></a>
+  <a href="docs/screenshots/device-info.png"><img src="docs/screenshots/device-info.png" alt="TV device information" width="320"></a>
+  <a href="docs/screenshots/available-apps.png"><img src="docs/screenshots/available-apps.png" alt="Available apps and catalog search" width="320"></a>
+</p>
 
 ## Scheduled Developer Mode renewal
 
