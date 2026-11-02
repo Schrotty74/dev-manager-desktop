@@ -4,7 +4,11 @@ Changes to the [Schrotty74 fork](https://github.com/Schrotty74/dev-manager-deskt
 of webOS Dev Manager are recorded here. Earlier upstream releases are listed in
 the [webosbrew release history](https://github.com/webosbrew/dev-manager-desktop/releases).
 
-## 1.99.24 - 2026-11-02
+## Unreleased
+
+- Limit local builds to macOS on Apple Silicon. Remove Windows, Linux, and Android build files and assets while retaining the app's device-management features.
+
+## [1.99.24] - 2026-11-02
 
 - Preserve the All sources selection when switching between Installed and Available.
   Refresh continues to reload all sources after returning to Available.
@@ -93,3 +97,4 @@ First macOS release of this fork, built for Apple Silicon (arm64).
 
 [1.99.22]: https://github.com/Schrotty74/dev-manager-desktop/releases/tag/v1.99.22
 [1.99.23]: https://github.com/Schrotty74/dev-manager-desktop/releases/tag/v1.99.23
+[1.99.24]: https://github.com/Schrotty74/dev-manager-desktop/releases/tag/v1.99.24

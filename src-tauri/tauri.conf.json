@@ -39,47 +39,14 @@
     "category": "DeveloperTool",
     "copyright": "",
     "licenseFile": "../LICENSE",
-    "linux": {
-      "deb": {
-        "desktopTemplate": "./assets/app.desktop",
-        "depends": [
-          "zlib1g (>=1.2.11)"
-        ],
-        "provides": [
-          "web-os-dev-manager"
-        ],
-        "conflicts": [
-          "web-os-dev-manager"
-        ],
-        "replaces": [
-          "web-os-dev-manager"
-        ]
-      },
-      "rpm": {
-        "desktopTemplate": "./assets/app.desktop",
-        "depends": [
-          "zlib"
-        ],
-        "provides": [
-          "web-os-dev-manager"
-        ],
-        "conflicts": [
-          "web-os-dev-manager"
-        ],
-        "obsoletes": [
-          "web-os-dev-manager"
-        ]
-      }
-    },
     "externalBin": [],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
+      "icons/icon.icns"
     ],
-    "longDescription": "Simple tool to manage developer mode enabled or rooted webOS TV\n\nFeatures\n- No need to install LG SDK or IDE\n- Add device without need to use command line\n- Install apps on TV with a few clicks\n- Configuration compatible with ares-cli\n- Works on Windows, Linux and macOS (Apple Silicon too!)\n- Dark mode follows system preferences",
+    "longDescription": "Manage developer-mode or rooted LG webOS TVs from macOS. Install apps from Homebrew Channel and custom catalogs, manage files, use SSH terminals, and configure native macOS glass effects and themes.",
     "macOS": {
       "entitlements": null,
       "exceptionDomain": "",
@@ -92,19 +59,9 @@
       "../LICENSE": "LICENSE"
     },
     "shortDescription": "Device/Dev Mode Manager for webOS TV",
-    "targets": "all",
-    "windows": {
-      "certificateThumbprint": null,
-      "digestAlgorithm": "sha256",
-      "timestampUrl": "",
-      "webviewInstallMode": {
-        "silent": false,
-        "type": "embedBootstrapper"
-      },
-      "wix": {}
-    },
-    "android": {
-      "minSdkVersion": 28
-    }
+    "targets": [
+      "app",
+      "dmg"
+    ]
   }
 }

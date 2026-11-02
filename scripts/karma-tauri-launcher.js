@@ -2,14 +2,11 @@ const TauriLauncher = /** @class */ (function () {
 
   function TauriLauncher(baseBrowserDecorator, name, logger) {
     baseBrowserDecorator(this);
-    let tauriCommand = ['dev'];
-    if (name === 'TauriAndroid') {
-      tauriCommand = ['android', 'dev'];
-    }
+    const tauriCommand = ['dev'];
     this._getOptions = function (url) {
       const tauriConfOverride = {
         build: {
-          beforeDevCommand: 'adb reverse tcp:9876 tcp:9876',
+          beforeDevCommand: '',
           devUrl: url
         },
         app: {
@@ -45,5 +42,4 @@ const TauriLauncher = /** @class */ (function () {
 
 module.exports = {
   'launcher:TauriDesktop': ['type', TauriLauncher],
-  'launcher:TauriAndroid': ['type', TauriLauncher],
 };
