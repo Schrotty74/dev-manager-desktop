@@ -4,12 +4,10 @@ Changes to the [Schrotty74 fork](https://github.com/Schrotty74/dev-manager-deskt
 of webOS Dev Manager are recorded here. Earlier upstream releases are listed in
 the [webosbrew release history](https://github.com/webosbrew/dev-manager-desktop/releases).
 
-## 1.99.24-beta.2 - 2026-11-02
+## 1.99.24 - 2026-11-02
 
 - Preserve the All sources selection when switching between Installed and Available.
   Refresh continues to reload all sources after returning to Available.
-
-## 1.99.24-beta.1 - 2026-11-01
 
 - Search app names, IDs and descriptions across all configured catalogs, including
   every catalog page. Filter by installation status, available updates, favorites
