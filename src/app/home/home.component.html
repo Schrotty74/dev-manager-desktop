@@ -75,6 +75,16 @@
   </nav>
 
   <main role="main" class="app-content flex-fill ms-sm-auto p-0 overflow-auto">
+    @if (devModeExpiresSoon && selectedDevice) {
+      <div class="alert alert-warning rounded-0 mb-0 d-flex flex-wrap align-items-center gap-2" role="alert" aria-live="polite">
+        <span class="flex-fill">Developer Mode on {{ selectedDevice.name }} expires within 24 hours.</span>
+        <a class="btn btn-outline-secondary btn-sm" routerLink="info">Device info</a>
+        <button type="button" class="btn btn-warning btn-sm" [disabled]="renewingDevMode" (click)="renewDevMode()">
+          {{ renewingDevMode ? 'Renewing…' : 'Renew session' }}
+        </button>
+      </div>
+    }
+    @if (devModeRenewError) { <p class="alert alert-danger mx-3" role="alert">{{ devModeRenewError }}</p> }
     <router-outlet></router-outlet>
   </main>
 </div>

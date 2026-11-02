@@ -13,6 +13,7 @@ import {APP_ID_HBCHANNEL} from "../shared/constants";
 import {HbchannelRemoveComponent} from "./hbchannel-remove/hbchannel-remove.component";
 import {StatStorageInfoComponent} from "../shared/components/stat-storage-info/stat-storage-info.component";
 import {DetailsComponent} from "./details/details.component";
+import {InstallQueueService} from '../core/services/install-queue.service';
 
 @Component({
     selector: 'app-apps',
@@ -38,6 +39,7 @@ export class AppsComponent implements OnInit, OnDestroy {
         public deviceManager: DeviceManagerService,
         private modalService: NgbModal,
         private appManager: AppManagerService,
+        public queue: InstallQueueService,
     ) {
     }
 
@@ -45,6 +47,7 @@ export class AppsComponent implements OnInit, OnDestroy {
         this.devices$ = this.deviceManager.devices$;
         this.deviceSubscription = this.deviceManager.selected$.subscribe((device) => {
             this.device = device;
+            this.instPackages = undefined;
             if (device) {
                 this.loadPackages();
             } else {
@@ -68,9 +71,7 @@ export class AppsComponent implements OnInit, OnDestroy {
         this.packages$ = this.appManager.packages$(device);
         this.packagesSubscription = this.packages$.subscribe({
             next: (pkgs) => {
-                if (pkgs?.length) {
-                    this.instPackages = keyBy(pkgs, (pkg) => pkg.id);
-                }
+                this.instPackages = pkgs ? keyBy(pkgs, (pkg) => pkg.id) : undefined;
             }, error: noop
         });
         this.appManager.load(device).catch(noop);
@@ -142,8 +143,7 @@ export class AppsComponent implements OnInit, OnDestroy {
         }
     }
 
-    async installPackage(item: RepositoryItem, channel: 'stable' | 'beta' = 'stable'): Promise<boolean> {
-        const device = this.device;
+    async installPackage(item: RepositoryItem, channel: 'stable' | 'beta' = 'stable', device: Device | null = this.device): Promise<boolean> {
         if (!device) return false;
         const progress = ProgressDialogComponent.open(this.modalService);
         try {
@@ -190,6 +190,10 @@ export class AppsComponent implements OnInit, OnDestroy {
         } finally {
             progress.close(true);
         }
+    }
+
+    runQueue(): void {
+        void this.queue.run((item, device) => this.installPackage(item, 'stable', device));
     }
 
     openDetails(item: RepositoryItem): void {

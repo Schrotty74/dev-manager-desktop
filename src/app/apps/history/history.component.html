@@ -1,0 +1,27 @@
+<section aria-labelledby="install-history-heading">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="h5 mb-0" id="install-history-heading">Installation history</h2>
+    @if (history.entries.length) {
+      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="clear()">Clear history</button>
+    }
+  </div>
+  @if (history.entries.length) {
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead><tr><th scope="col">Result</th><th scope="col">App</th><th scope="col">Device</th><th scope="col">Time</th></tr></thead>
+        <tbody>
+          @for (entry of history.entries; track entry.timestamp + entry.device + $index) {
+            <tr>
+              <td><span [class.text-success]="entry.success" [class.text-danger]="!entry.success">{{ entry.success ? 'Succeeded' : 'Failed' }}</span></td>
+              <td>{{ entry.appName || entry.appId || 'IPK package' }} @if (entry.version) { <small class="text-body-secondary">{{ entry.version }}</small> }</td>
+              <td>{{ entry.device }}</td>
+              <td><time [attr.datetime]="entry.timestamp | date:'yyyy-MM-ddTHH:mm:ssXXX'">{{ entry.timestamp | date:'medium' }}</time></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <p class="text-body-secondary mb-0">No installations recorded yet.</p>
+  }
+</section>

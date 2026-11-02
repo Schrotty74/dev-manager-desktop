@@ -1,6 +1,6 @@
 import {Component, Injector, OnDestroy, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import {NgbModal} from '@ng-bootstrap/ng-bootstrap';
-import {noop, Subscription} from 'rxjs';
+import {map, noop, Observable, Subscription, timer} from 'rxjs';
 import {Device, RawPackageInfo} from '../types';
 import {
     AppManagerService,
@@ -32,6 +32,7 @@ export class InfoComponent implements OnInit, OnDestroy {
     device: Device | null = null;
     deviceInfo: DeviceInfo | null = null;
     devModeInfo: DevModeStatus | null = null;
+    devModeExpiryWarning$?: Observable<boolean>;
     homebrewAppInfo: RawPackageInfo | null = null;
     homebrewAppConfig: Partial<HomebrewChannelConfiguration> | null = null;
     homebrewRepoManifest?: RepositoryItem;
@@ -55,6 +56,7 @@ export class InfoComponent implements OnInit, OnDestroy {
             this.device = selected;
             this.deviceInfo = null;
             this.devModeInfo = null;
+            this.devModeExpiryWarning$ = undefined;
             this.homebrewAppInfo = null;
             this.homebrewAppConfig = null;
             this.loadInfo();
@@ -130,8 +132,12 @@ export class InfoComponent implements OnInit, OnDestroy {
         }
         try {
             this.devModeInfo = await this.devMode.status(device);
+            this.devModeExpiryWarning$ = this.devModeInfo.token
+                ? countdownWithinDay(this.devModeInfo.remaining)
+                : undefined;
         } catch (e) {
             this.devModeInfo = null;
+            this.devModeExpiryWarning$ = undefined;
         }
     }
 
@@ -162,4 +168,12 @@ export class InfoComponent implements OnInit, OnDestroy {
         await this.loadHomebrewInfo(device);
     }
 
+}
+
+function countdownWithinDay(value: string | undefined): Observable<boolean> {
+    const match = /^(\d+):(\d{2}):(\d{2})$/.exec(value ?? '');
+    if (!match) return timer(0).pipe(map(() => false));
+    const initialSeconds = Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]);
+    const startedAt = Date.now();
+    return timer(0, 1000).pipe(map(() => initialSeconds - Math.floor((Date.now() - startedAt) / 1000) <= 24 * 3600));
 }

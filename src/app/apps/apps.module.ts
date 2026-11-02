@@ -10,12 +10,15 @@ import {SharedModule} from "../shared/shared.module";
 import {HbchannelRemoveComponent} from './hbchannel-remove/hbchannel-remove.component';
 import {FormsModule} from "@angular/forms";
 
+import {HistoryComponent} from './history/history.component';
+
 @NgModule({
     declarations: [
         AppsComponent,
         InstalledComponent,
         ChannelComponent,
         HbchannelRemoveComponent,
+        HistoryComponent,
     ],
     imports: [
         CommonModule,

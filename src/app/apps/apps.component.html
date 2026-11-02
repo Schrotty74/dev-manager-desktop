@@ -20,6 +20,10 @@
             <app-channel [installed]="instPackages"></app-channel>
           </ng-template>
         </li>
+        <li ngbNavItem="history">
+          <a ngbNavLink>History</a>
+          <ng-template ngbNavContent><app-install-history/></ng-template>
+        </li>
       </ul>
       <button class="btn btn-primary text-nowrap ms-auto" (click)="openInstallChooser()">
         <i class="bi bi-folder-fill me-2"></i>Install
@@ -27,6 +31,26 @@
     </div>
   </nav>
   <div class="p-3 flex-fill overflow-auto" [ngbNavOutlet]="nav"></div>
+  @if (queue.jobs().length) {
+    <section class="border-top p-2 overflow-auto" aria-label="Installation queue" style="max-height: 240px">
+      <div class="d-flex gap-2 flex-wrap align-items-center">
+        <strong>Installation queue</strong>
+        <button type="button" class="btn btn-sm btn-primary" [disabled]="queue.running()" (click)="runQueue()">Start queue</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="queue.cancelPending()">Cancel pending</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="queue.clearFinished()">Clear finished</button>
+      </div>
+      <small>Each app keeps its selected source and TV. Existing compatibility checks still apply.</small>
+      <ul class="list-unstyled mb-0" aria-live="polite">
+        @for (job of queue.jobs(); track job.id) {
+          <li class="d-flex align-items-center gap-2 flex-wrap mt-1">
+            <span>{{ job.item.title || job.item.id }} · {{ job.item.manifest?.version }} · {{ job.sourceName }} → {{ job.device.name }}</span>
+            <span class="badge bg-secondary">{{ job.state === 'not-installed' ? 'Failed or skipped' : job.state }}</span>
+            @if (job.state !== 'installing') { <button type="button" class="btn btn-sm btn-outline-secondary" (click)="queue.remove(job.id)" [attr.aria-label]="'Remove ' + job.item.title + ' from queue'">Remove</button> }
+          </li>
+        }
+      </ul>
+    </section>
+  }
   <div class="stat-bar border-top bottom-0 mt-auto d-flex flex-row flex-shrink-0 align-items-center">
     <app-stat-storage-info class="ms-auto me-3 storage-info-bar" [device]="device" #storageInfo></app-stat-storage-info>
   </div>

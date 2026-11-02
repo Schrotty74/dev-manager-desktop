@@ -3,6 +3,7 @@ import {isTauri} from '@tauri-apps/api/core';
 import {save} from '@tauri-apps/plugin-dialog';
 import {writeTextFile} from '@tauri-apps/plugin-fs';
 import {RepositorySourcesService} from '../core/services/repository-sources.service';
+import {SettingsBackupService} from '../core/services/settings-backup.service';
 
 @Component({
     selector: 'app-repository-sources', standalone: true,
@@ -12,6 +13,7 @@ import {RepositorySourcesService} from '../core/services/repository-sources.serv
 })
 export class RepositorySourcesComponent {
     readonly sources = inject(RepositorySourcesService);
+    private readonly settingsBackup = inject(SettingsBackupService);
     readonly name = signal('');
     readonly url = signal('');
     readonly busy = signal(false);
@@ -67,5 +69,55 @@ export class RepositorySourcesComponent {
             this.status.set(`Backup restored: ${added} sources added. Existing sources were kept and duplicates skipped.`);
         } catch (error) { this.error.set((error as Error).message); }
         finally { input.value = ''; this.busy.set(false); }
+    }
+
+    async backupSettings(): Promise<void> {
+        await this.saveBackup(this.settingsBackup.exportBackup(), 'webos-dev-manager-settings.json',
+            'Back up app settings', 'Settings backup saved.');
+    }
+
+    async restoreSettings(event: Event): Promise<void> {
+        const input = event.target as HTMLInputElement;
+        const file = input.files?.[0];
+        if (!file) return;
+        this.busy.set(true);
+        this.error.set('');
+        this.status.set('');
+        try {
+            if (file.size > 1_048_576) throw new Error('The settings backup is too large (maximum 1 MiB).');
+            const added = this.settingsBackup.restoreBackup(await file.text());
+            this.status.set(`Settings restored. ${added} sources added; existing sources were kept and duplicates skipped.`);
+        } catch (error) {
+            this.error.set((error as Error).message || 'The settings backup could not be restored.');
+        } finally {
+            input.value = '';
+            this.busy.set(false);
+        }
+    }
+
+    private async saveBackup(text: string, filename: string, title: string, success: string): Promise<void> {
+        this.busy.set(true);
+        this.error.set('');
+        this.status.set('');
+        try {
+            if (isTauri()) {
+                const target = await save({title, defaultPath: filename,
+                    filters: [{name: 'JSON backup', extensions: ['json']}]});
+                if (!target) return;
+                await writeTextFile(target, text);
+            } else {
+                const url = URL.createObjectURL(new Blob([text], {type: 'application/json'}));
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                link.click();
+                setTimeout(() => URL.revokeObjectURL(url), 0);
+            }
+            this.status.set(success);
+        } catch {
+            this.error.set('The settings backup could not be saved.');
+        } finally {
+            this.busy.set(false);
+        }
     }
 }

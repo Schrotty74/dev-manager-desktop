@@ -4,6 +4,32 @@ Changes to the [Schrotty74 fork](https://github.com/Schrotty74/dev-manager-deskt
 of webOS Dev Manager are recorded here. Earlier upstream releases are listed in
 the [webosbrew release history](https://github.com/webosbrew/dev-manager-desktop/releases).
 
+## 1.99.24-beta.2 - 2026-11-02
+
+- Preserve the All sources selection when switching between Installed and Available.
+  Refresh continues to reload all sources after returning to Available.
+
+## 1.99.24-beta.1 - 2026-11-01
+
+- Search app names, IDs and descriptions across all configured catalogs, including
+  every catalog page. Filter by installation status, available updates, favorites
+  or new apps, and sort results by name.
+- Refresh one source or all sources, show the last successful refresh, and retain
+  existing results when a source fails. Mark apps added after the first successful
+  check as new; optional notices appear in the app after a refresh.
+- Compare an app's sources, versions and package addresses. Review updates from
+  custom sources alongside the existing Homebrew Channel update checks.
+- Queue apps for sequential installation on the TV selected when each app was
+  queued. Keep the existing compatibility checks and display each queue result.
+- Save favorites locally and record the last 100 installation results without
+  storing credentials, device addresses or local file paths in the history.
+- Show an app-wide warning during the final 24 hours of Developer Mode, with
+  renewal controls. Read the status when selecting a TV and update the countdown
+  locally; renewal and device-info checks update the warning.
+- Back up and restore the appearance theme and package sources together. Existing
+  source-only backups remain supported; TV configuration and credentials are
+  excluded.
+
 ## [1.99.23] - 2026-11-01
 
 - Add locally saved custom package sources alongside Homebrew Channel, with a

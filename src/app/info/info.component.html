@@ -60,6 +60,11 @@
               <div class="card-body">
                 <h5 class="card-title">Developer Mode</h5>
                 @if (devModeInfo.token) {
+                  @if (devModeExpiryWarning$ | async) {
+                    <div class="alert alert-warning" role="alert">
+                      Developer Mode expires within 24 hours. Renew the session before installing apps or using developer features.
+                    </div>
+                  }
                   <p class="card-text">
                     <strong>Remaining duration: </strong><span>{{ devModeInfo.remaining | devmodeCountdown | async }}</span><br>
                     <small>Remaining time displaying on your TV will only update on boot.</small>

@@ -1,3 +1,10 @@
+<div class="d-flex align-items-center gap-2 mb-2">
+  <button type="button" class="btn btn-sm btn-outline-primary" (click)="refreshUpdates()" [disabled]="catalogs.loading()">Check all sources for updates</button>
+  @if (catalogs.loading()) { <small role="status">Checking catalogs…</small> }
+</div>
+@for (source of catalogs.errors(); track source.id) {
+  <p class="text-warning" role="status">{{ source.name }}: {{ catalogs.states()[source.url]?.error }}</p>
+}
 @let installed = installed$ | async;
 @if (installedError) {
   <app-error-card title="Unable to get installed apps" [error]="installedError" (retry)="loadPackages()">
@@ -25,6 +32,12 @@
           <button class="btn btn-sm btn-primary text-nowrap" type="button" aria-label="Update"
                   (click)="$event.stopPropagation(); parent.installPackage(repoPackages![pkg.id])">
             Update
+          </button>
+        }
+        @for (candidate of customUpdates(pkg); track candidate.key) {
+          <button class="btn btn-sm btn-outline-primary text-wrap ms-2" type="button"
+            (click)="$event.stopPropagation(); parent.openDetails(candidate.item)">
+            {{ candidate.source.name }}: {{ candidate.item.manifest?.version }} — Review update
           </button>
         }
       </li>

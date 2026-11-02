@@ -1,1 +1,11 @@
 .source-select { width: auto; max-width: 100%; min-width: 180px; }
+.catalog-controls { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.catalog-controls input[type=search] { flex: 1 1 280px; }
+.catalog-controls select { width: auto; }
+.catalog-icon { object-fit: contain; flex-shrink: 0; }
+.catalog-description, .package-address { overflow-wrap: anywhere; }
+.min-width-0 { min-width: 0; }
+@media (max-width: 650px) {
+  .list-group-item > .d-flex { flex-wrap: wrap; }
+  .list-group-item .flex-fill { flex-basis: calc(100% - 100px); }
+}

@@ -37,4 +37,12 @@
     <input #backupFile class="visually-hidden" type="file" accept="application/json,.json" aria-label="Choose sources backup"
            [disabled]="busy()" (change)="restore($event)">
   </div>
+  <h2 class="mt-4">App settings backup</h2>
+  <p class="text-body-secondary">Save your appearance theme and package sources together. This file does not include TV configuration or credentials. Restoring merges sources and applies the saved theme.</p>
+  <div class="d-flex gap-2 flex-wrap">
+    <button type="button" class="btn btn-outline-primary" [disabled]="busy()" (click)="backupSettings()">Back up settings</button>
+    <button type="button" class="btn btn-outline-secondary" [disabled]="busy()" (click)="settingsBackupFile.click()">Restore settings</button>
+    <input #settingsBackupFile class="visually-hidden" type="file" accept="application/json,.json" aria-label="Choose settings backup"
+           [disabled]="busy()" (change)="restoreSettings($event)">
+  </div>
 </section>

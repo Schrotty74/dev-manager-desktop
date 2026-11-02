@@ -19,6 +19,7 @@ import {APP_ID_HBCHANNEL} from "../../shared/constants";
 import {DeviceManagerService} from "./device-manager.service";
 import {HomebrewChannelConfiguration} from "../../types/luna-apis";
 import {download} from "@tauri-apps/plugin-upload";
+import {InstallHistoryService} from './install-history.service';
 
 /** Where an IPK waits on the device while appinstalld reads it. */
 const TEMP_IPK_DIR = '/media/developer/temp';
@@ -33,7 +34,8 @@ export class AppManagerService {
     private packagesSubjects: Map<string, Subject<PackageInfo[] | null>>;
 
     constructor(private luna: RemoteLunaService, private cmd: RemoteCommandService, private file: RemoteFileService,
-                private localFile: LocalFileService, private deviceManager: DeviceManagerService) {
+                private localFile: LocalFileService, private deviceManager: DeviceManagerService,
+                private installHistory: InstallHistoryService = new InstallHistoryService()) {
         this.packagesSubjects = new Map();
     }
 
@@ -77,49 +79,63 @@ export class AppManagerService {
     }
 
     async installByPath(device: Device, localPath: string, progress?: InstallProgressHandler): Promise<void> {
-        const hasHbChannel = await this.deviceManager.getHbChannelConfig(device).then(() => true)
-            .catch(() => false);
-        if (hasHbChannel) {
-            const sha256 = await this.localFile.checksum(localPath, 'sha256');
-            const serve: ServeInstance = await this.file.serveLocal(device, localPath);
-            console.log('Installing', serve.host);
-            try {
-                await this.hbChannelInstall(device, new URL(serve.host).toString(), sha256, progress);
-            } finally {
-                await serve.interrupt().catch(error => console.warn('Failed to stop IPK HTTP server', error));
+        try {
+            const hasHbChannel = await this.deviceManager.getHbChannelConfig(device).then(() => true)
+                .catch(() => false);
+            if (hasHbChannel) {
+                const sha256 = await this.localFile.checksum(localPath, 'sha256');
+                const serve: ServeInstance = await this.file.serveLocal(device, localPath);
+                console.log('Installing', serve.host);
+                try {
+                    await this.hbChannelInstall(device, new URL(serve.host).toString(), sha256, progress);
+                } finally {
+                    await serve.interrupt().catch(error => console.warn('Failed to stop IPK HTTP server', error));
+                }
+            } else {
+                const ipkPath = await this.tempDownloadIpk(device, localPath, progress);
+                try {
+                    await this.devInstall(device, ipkPath, progress);
+                } finally {
+                    await this.file.rm(device, ipkPath, false).catch(error =>
+                        console.warn('Failed to remove temporary IPK', error));
+                }
             }
-        } else {
-            const ipkPath = await this.tempDownloadIpk(device, localPath, progress);
-            try {
-                await this.devInstall(device, ipkPath, progress);
-            } finally {
-                await this.file.rm(device, ipkPath, false).catch(error =>
-                    console.warn('Failed to remove temporary IPK', error));
-            }
+            this.load(device).catch(noop);
+            this.installHistory.record(device, true);
+        } catch (error) {
+            this.installHistory.record(device, false);
+            throw error;
         }
-        this.load(device).catch(noop);
     }
 
     async installByManifest(device: Device, manifest: PackageManifest, progress?: InstallProgressHandler): Promise<void> {
-        const hasHbChannel = await this.deviceManager.getHbChannelConfig(device).then(() => true)
-            .catch(() => false);
-        if (hasHbChannel) {
-            try {
-                await this.hbChannelInstall(device, manifest.ipkUrl, manifest.ipkHash?.sha256, progress);
-                await this.load(device).catch(noop);
-                return;
-            } catch (e) {
-                // Never attempt to do default install, if we are reinstalling hbchannel
-                if (e instanceof InstallError || manifest.id === APP_ID_HBCHANNEL) {
-                    throw e;
+        const metadata = {appId: manifest.id, version: manifest.version};
+        try {
+            const hasHbChannel = await this.deviceManager.getHbChannelConfig(device).then(() => true)
+                .catch(() => false);
+            if (hasHbChannel) {
+                try {
+                    await this.hbChannelInstall(device, manifest.ipkUrl, manifest.ipkHash?.sha256, progress);
+                    await this.load(device).catch(noop);
+                    this.installHistory.record(device, true, metadata);
+                    return;
+                } catch (e) {
+                    // Never attempt to do default install, if we are reinstalling hbchannel
+                    if (e instanceof InstallError || manifest.id === APP_ID_HBCHANNEL) {
+                        throw e;
+                    }
                 }
             }
+            const path = await this.tempDownloadIpk(device, new URL(manifest.ipkUrl), progress);
+            await this.devInstall(device, path, progress)
+                .then(() => this.load(device).catch(noop))
+                .finally(() => this.file.rm(device, path, false).catch(error =>
+                    console.warn('Failed to remove temporary IPK', error)));
+            this.installHistory.record(device, true, metadata);
+        } catch (error) {
+            this.installHistory.record(device, false, metadata);
+            throw error;
         }
-        const path = await this.tempDownloadIpk(device, new URL(manifest.ipkUrl), progress);
-        await this.devInstall(device, path, progress)
-            .then(() => this.load(device).catch(noop))
-            .finally(() => this.file.rm(device, path, false).catch(error =>
-                console.warn('Failed to remove temporary IPK', error)));
     }
 
     async remove(device: Device, id: string): Promise<void> {

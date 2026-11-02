@@ -26,7 +26,7 @@ async function requestJson(url: string): Promise<any> {
         }, requestTimeoutMs);
     });
     const request = async () => {
-        const response = await fetch(url, {signal: controller.signal});
+        const response = await fetch(url, {signal: controller.signal, cache: 'no-store'});
         if (!response.ok) {
             // Do not wait for an error body (or its cleanup) before reporting the status.
             void response.body?.cancel().catch(() => undefined);
