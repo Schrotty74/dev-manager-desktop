@@ -19,11 +19,12 @@ import {APP_ID_HBCHANNEL} from "../../shared/constants";
 import {DeviceManagerService} from "./device-manager.service";
 import {HomebrewChannelConfiguration} from "../../types/luna-apis";
 import {download} from "@tauri-apps/plugin-upload";
-import {InstallHistoryService} from './install-history.service';
+import {InstallHistoryService, InstallPhase, installPhaseLabels} from './install-history.service';
 
 /** Where an IPK waits on the device while appinstalld reads it. */
 const TEMP_IPK_DIR = '/media/developer/temp';
 // App operations can take minutes; every response renews this inactivity window.
+const HOMEBREW_FIRST_RESPONSE_TIMEOUT_MS = 30_000;
 const APP_OPERATION_RESPONSE_TIMEOUT_MS = 10 * 60 * 1_000;
 
 @Injectable({
@@ -79,22 +80,31 @@ export class AppManagerService {
     }
 
     async installByPath(device: Device, localPath: string, progress?: InstallProgressHandler): Promise<void> {
+        let phase: InstallPhase = 'prepare';
+        const enterPhase = (next: InstallPhase) => {
+            phase = next;
+            progress?.(undefined, installPhaseLabels[next], next);
+        };
         try {
+            enterPhase('prepare');
             const hasHbChannel = await this.deviceManager.getHbChannelConfig(device).then(() => true)
                 .catch(() => false);
             if (hasHbChannel) {
                 const sha256 = await this.localFile.checksum(localPath, 'sha256');
+                enterPhase('transfer');
                 const serve: ServeInstance = await this.file.serveLocal(device, localPath);
                 console.log('Installing', serve.host);
                 try {
+                    enterPhase('homebrew');
                     await this.hbChannelInstall(device, new URL(serve.host).toString(), sha256, progress);
                 } finally {
                     await serve.interrupt().catch(error => console.warn('Failed to stop IPK HTTP server', error));
                 }
             } else {
-                const ipkPath = await this.tempDownloadIpk(device, localPath, progress);
+                const ipkPath = await this.tempDownloadIpk(device, localPath, enterPhase, progress);
                 try {
-                    await this.devInstall(device, ipkPath, progress);
+                    enterPhase('install');
+                    await this.devInstall(device, ipkPath);
                 } finally {
                     await this.file.rm(device, ipkPath, false).catch(error =>
                         console.warn('Failed to remove temporary IPK', error));
@@ -103,37 +113,48 @@ export class AppManagerService {
             this.load(device).catch(noop);
             this.installHistory.record(device, true);
         } catch (error) {
-            this.installHistory.record(device, false);
+            this.installHistory.record(device, false, {failurePhase: phase});
             throw error;
         }
     }
 
     async installByManifest(device: Device, manifest: PackageManifest, progress?: InstallProgressHandler): Promise<void> {
         const metadata = {appId: manifest.id, version: manifest.version};
+        let phase: InstallPhase = 'prepare';
+        const enterPhase = (next: InstallPhase) => {
+            phase = next;
+            progress?.(undefined, installPhaseLabels[next], next);
+        };
         try {
+            enterPhase('prepare');
             const hasHbChannel = await this.deviceManager.getHbChannelConfig(device).then(() => true)
                 .catch(() => false);
             if (hasHbChannel) {
                 try {
+                    enterPhase('homebrew');
                     await this.hbChannelInstall(device, manifest.ipkUrl, manifest.ipkHash?.sha256, progress);
                     await this.load(device).catch(noop);
                     this.installHistory.record(device, true, metadata);
                     return;
                 } catch (e) {
-                    // Never attempt to do default install, if we are reinstalling hbchannel
-                    if (e instanceof InstallError || manifest.id === APP_ID_HBCHANNEL) {
+                    // Preserve the fallback for ordinary Homebrew errors. An unconfirmed result may still be running.
+                    if (e instanceof InstallError || e instanceof HomebrewInstallUnconfirmed || manifest.id === APP_ID_HBCHANNEL) {
                         throw e;
                     }
                 }
             }
-            const path = await this.tempDownloadIpk(device, new URL(manifest.ipkUrl), progress);
-            await this.devInstall(device, path, progress)
-                .then(() => this.load(device).catch(noop))
-                .finally(() => this.file.rm(device, path, false).catch(error =>
-                    console.warn('Failed to remove temporary IPK', error)));
+            const path = await this.tempDownloadIpk(device, new URL(manifest.ipkUrl), enterPhase, progress);
+            try {
+                enterPhase('install');
+                await this.devInstall(device, path);
+                await this.load(device).catch(noop);
+            } finally {
+                await this.file.rm(device, path, false).catch(error =>
+                    console.warn('Failed to remove temporary IPK', error));
+            }
             this.installHistory.record(device, true, metadata);
         } catch (error) {
-            this.installHistory.record(device, false, metadata);
+            this.installHistory.record(device, false, {...metadata, failurePhase: phase});
             throw error;
         }
     }
@@ -211,10 +232,8 @@ export class AppManagerService {
         return subject;
     }
 
-    private async tempDownloadIpk(device: Device, location: string | URL, progress?: InstallProgressHandler): Promise<string> {
-        // webOS 11 keeps appinstalld out of /tmp, so the IPK goes to the
-        // developer partition, the same place ares-install uses.
-        await this.file.mkdir(device, TEMP_IPK_DIR, 0o777);
+    private async tempDownloadIpk(device: Device, location: string | URL, enterPhase: (phase: InstallPhase) => void,
+                                  progress?: InstallProgressHandler): Promise<string> {
         const targetPath = `${TEMP_IPK_DIR}/devman_dl_${self.crypto.randomUUID()}.ipk`;
         let localPath: string | undefined;
         let deleteLocal = false;
@@ -225,9 +244,9 @@ export class AppManagerService {
                     break;
                 }
                 default: {
+                    enterPhase('download');
                     localPath = await this.localFile.tempPath('.ipk');
                     deleteLocal = true;
-                    progress?.(undefined, 'Downloading IPK to computer...');
                     let downloaded: number = 0;
                     await download(location.toString(), localPath, prog => {
                         downloaded += prog.progress;
@@ -236,7 +255,9 @@ export class AppManagerService {
                     break;
                 }
             }
-            progress?.(undefined, 'Sending IPK to device...');
+            enterPhase('transfer');
+            // webOS 11 keeps appinstalld out of /tmp. Use the developer partition like ares-install.
+            await this.file.mkdir(device, TEMP_IPK_DIR, 0o777);
             try {
                 await this.file.put(device, targetPath, localPath, (copied, total) => {
                     progress?.(total ? copied / total * 100 : undefined, 'Sending IPK to device...');
@@ -259,7 +280,7 @@ export class AppManagerService {
         }
     }
 
-    private async devInstall(device: Device, path: string, progress?: InstallProgressHandler): Promise<void> {
+    private async devInstall(device: Device, path: string): Promise<void> {
         const luna = await this.luna.subscribe(device, 'luna://com.webos.appInstallService/dev/install', {
             id: 'com.ares.defaultName',
             ipkUrl: path,
@@ -286,7 +307,7 @@ export class AppManagerService {
                 progress?.(v['progress'], v['statusText']);
                 console.debug('install output', v);
                 return false;
-            });
+            }, 'Installation', true);
         } catch (e) {
             const match = e instanceof LunaResponseError && e.details?.match(/(-?\d+): +(\w+)/);
             if (match && match[2] === 'FAILED_IPKG_INSTALL' && match[1] === '-5') {
@@ -300,17 +321,29 @@ export class AppManagerService {
 
 async function waitForAppOperationResult(luna: LunaSubscription<LunaResponse>,
                                          mapResponse: (response: LunaResponse) => boolean,
-                                         operation: 'Installation' | 'Uninstallation' = 'Installation'): Promise<void> {
+                                         operation: 'Installation' | 'Uninstallation' = 'Installation',
+                                         homebrew = false): Promise<void> {
     try {
         await firstValueFrom(luna.asObservable().pipe(
             // Apply before filtering progress, so all Luna messages reset the timer.
-            timeout({each: APP_OPERATION_RESPONSE_TIMEOUT_MS, with: () => throwError(() =>
-                new Error(`No ${operation.toLowerCase()} response from the TV for 10 minutes. Check the TV connection and Developer Mode.`))}),
+            timeout({
+                first: homebrew ? HOMEBREW_FIRST_RESPONSE_TIMEOUT_MS : APP_OPERATION_RESPONSE_TIMEOUT_MS,
+                each: APP_OPERATION_RESPONSE_TIMEOUT_MS,
+                with: ({seen}) => throwError(() => {
+                    if (homebrew) {
+                        return new HomebrewInstallUnconfirmed(seen === 0
+                            ? 'No initial response from Homebrew Channel within 30 seconds.'
+                            : 'Homebrew Channel stopped reporting progress for 10 minutes.');
+                    }
+                    return new Error(`No ${operation.toLowerCase()} response from the TV for 10 minutes. Check the TV connection and Developer Mode.`);
+                }),
+            }),
             map(mapResponse),
             filter(Boolean),
         ));
     } catch (error) {
         if (error instanceof EmptyError) {
+            if (homebrew) throw new HomebrewInstallUnconfirmed('Homebrew Channel closed the connection before reporting a result.');
             throw new Error(`${operation} connection closed before the TV reported a result.`);
         }
         throw error;
@@ -342,7 +375,13 @@ function mapAppinstalldResponse(v: LunaResponse, expectResult: string | RegExp):
 }
 
 export interface InstallProgressHandler {
-    (progress?: number, statusText?: string): void;
+    (progress?: number, statusText?: string, phase?: InstallPhase): void;
+}
+
+class HomebrewInstallUnconfirmed extends Error {
+    constructor(message: string) {
+        super(`${message} Check whether the app was installed on the TV before retrying.`);
+    }
 }
 
 export class InstallError extends Error {

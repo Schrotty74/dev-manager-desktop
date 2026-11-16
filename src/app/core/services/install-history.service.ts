@@ -1,6 +1,16 @@
 import {Injectable} from '@angular/core';
 import {Device} from '../../types';
 
+export const installPhaseLabels = {
+    prepare: 'Preparing package or TV connection',
+    download: 'Downloading package',
+    transfer: 'Transferring package to TV',
+    install: 'Installing on TV',
+    homebrew: 'Installing through Homebrew Channel',
+} as const;
+
+export type InstallPhase = keyof typeof installPhaseLabels;
+
 export interface InstallHistoryEntry {
     timestamp: number;
     success: boolean;
@@ -8,6 +18,7 @@ export interface InstallHistoryEntry {
     appId?: string;
     appName?: string;
     version?: string;
+    failurePhase?: InstallPhase;
 }
 
 const STORAGE_KEY = 'webos-dev-manager.install-history';
@@ -25,7 +36,7 @@ export class InstallHistoryService {
         }
     }
 
-    record(device: Device, result: boolean, metadata: Pick<InstallHistoryEntry, 'appId' | 'appName' | 'version'> = {}): void {
+    record(device: Device, result: boolean, metadata: Pick<InstallHistoryEntry, 'appId' | 'appName' | 'version' | 'failurePhase'> = {}): void {
         const entry: InstallHistoryEntry = {
             timestamp: Date.now(), success: result, device: device.name,
             ...metadata,
@@ -49,5 +60,6 @@ function isEntry(value: unknown): value is InstallHistoryEntry {
         && typeof entry.device === 'string'
         && (entry.appId === undefined || typeof entry.appId === 'string')
         && (entry.appName === undefined || typeof entry.appName === 'string')
-        && (entry.version === undefined || typeof entry.version === 'string');
+        && (entry.version === undefined || typeof entry.version === 'string')
+        && (entry.failurePhase === undefined || Object.hasOwn(installPhaseLabels, entry.failurePhase));
 }

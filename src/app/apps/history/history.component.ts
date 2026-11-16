@@ -1,5 +1,5 @@
 import {ChangeDetectionStrategy, Component} from '@angular/core';
-import {InstallHistoryService} from '../../core/services/install-history.service';
+import {InstallHistoryService, installPhaseLabels} from '../../core/services/install-history.service';
 
 @Component({
     selector: 'app-install-history',
@@ -9,6 +9,8 @@ import {InstallHistoryService} from '../../core/services/install-history.service
     standalone: false,
 })
 export class HistoryComponent {
+    protected readonly phases = installPhaseLabels;
+
     constructor(public history: InstallHistoryService) {}
 
     clear(): void {

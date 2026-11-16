@@ -12,7 +12,12 @@
         <tbody>
           @for (entry of history.entries; track entry.timestamp + entry.device + $index) {
             <tr>
-              <td><span [class.text-success]="entry.success" [class.text-danger]="!entry.success">{{ entry.success ? 'Succeeded' : 'Failed' }}</span></td>
+              <td>
+                <span [class.text-success]="entry.success" [class.text-danger]="!entry.success">{{ entry.success ? 'Succeeded' : 'Failed' }}</span>
+                @if (entry.failurePhase; as phase) {
+                  <small class="d-block text-body-secondary">{{ phases[phase] }}</small>
+                }
+              </td>
               <td>{{ entry.appName || entry.appId || 'IPK package' }} @if (entry.version) { <small class="text-body-secondary">{{ entry.version }}</small> }</td>
               <td>{{ entry.device }}</td>
               <td><time [attr.datetime]="entry.timestamp | date:'yyyy-MM-ddTHH:mm:ssXXX'">{{ entry.timestamp | date:'medium' }}</time></td>

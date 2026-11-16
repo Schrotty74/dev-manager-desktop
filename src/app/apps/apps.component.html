@@ -25,11 +25,14 @@
           <ng-template ngbNavContent><app-install-history/></ng-template>
         </li>
       </ul>
-      <button class="btn btn-primary text-nowrap ms-auto" (click)="openInstallChooser()">
+      <button class="btn btn-primary text-nowrap ms-auto" [disabled]="!device" (click)="openInstallChooser()">
         <i class="bi bi-folder-fill me-2"></i>Install
       </button>
     </div>
   </nav>
+  @if (draggingIpk) {
+    <div class="border-bottom bg-panel px-3 py-2" role="status">Drop IPK files to review them before adding them to the queue.</div>
+  }
   <div class="p-3 flex-fill overflow-auto" [ngbNavOutlet]="nav"></div>
   @if (queue.jobs().length) {
     <section class="border-top p-2 overflow-auto" aria-label="Installation queue" style="max-height: 240px">
@@ -39,13 +42,23 @@
         <button type="button" class="btn btn-sm btn-outline-secondary" (click)="queue.cancelPending()">Cancel pending</button>
         <button type="button" class="btn btn-sm btn-outline-secondary" (click)="queue.clearFinished()">Clear finished</button>
       </div>
-      <small>Each app keeps its selected source and TV. Existing compatibility checks still apply.</small>
+      <small>Each package keeps its source and target TV.</small>
       <ul class="list-unstyled mb-0" aria-live="polite">
         @for (job of queue.jobs(); track job.id) {
           <li class="d-flex align-items-center gap-2 flex-wrap mt-1">
-            <span>{{ job.item.title || job.item.id }} · {{ job.item.manifest?.version }} · {{ job.sourceName }} → {{ job.device.name }}</span>
-            <span class="badge bg-secondary">{{ job.state === 'not-installed' ? 'Failed or skipped' : job.state }}</span>
-            @if (job.state !== 'installing') { <button type="button" class="btn btn-sm btn-outline-secondary" (click)="queue.remove(job.id)" [attr.aria-label]="'Remove ' + job.item.title + ' from queue'">Remove</button> }
+            <span class="text-break">{{ job.name }}@if (job.version) { · {{ job.version }} } · {{ job.sourceName }} → {{ job.device.name }}</span>
+            <span class="badge" [class.bg-danger]="job.state === 'failed'" [class.bg-secondary]="job.state !== 'failed'">{{ job.state }}</span>
+            @if (job.state === 'failed') {
+              <button type="button" class="btn btn-sm btn-outline-primary" [disabled]="!queue.canRetry(job)"
+                      (click)="retryJob(job)" [attr.aria-label]="'Requeue ' + job.name">Requeue</button>
+            }
+            @if (job.state !== 'installing') {
+              <button type="button" class="btn btn-sm btn-outline-secondary" (click)="queue.remove(job.id)"
+                      [attr.aria-label]="'Remove ' + job.name + ' from queue'">Remove</button>
+            }
+            @if (job.failure) {
+              <small class="w-100 text-break">{{ job.failure }}</small>
+            }
           </li>
         }
       </ul>
@@ -55,3 +68,26 @@
     <app-stat-storage-info class="ms-auto me-3 storage-info-bar" [device]="device" #storageInfo></app-stat-storage-info>
   </div>
 </div>
+
+<ng-template #confirmLocalInstall let-modal>
+  @if (localSelection; as selection) {
+    <div class="modal-header">
+      <h2 class="modal-title h5" id="local-install-title">Add IPK files to the queue</h2>
+    </div>
+    <div class="modal-body">
+      <p>Target TV <strong>{{ selection.device.name }}</strong></p>
+      <ul class="mb-0">
+        @for (file of selection.files; track file.path) {
+          <li class="text-break">{{ file.name }}</li>
+        }
+      </ul>
+      @if (selection.skipped) {
+        <p class="text-body-secondary mt-3 mb-0">Skipped files or folders: {{ selection.skipped }}</p>
+      }
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" ngbAutofocus (click)="modal.dismiss()">Cancel</button>
+      <button type="button" class="btn btn-primary" (click)="modal.close(true)">Add to queue</button>
+    </div>
+  }
+</ng-template>

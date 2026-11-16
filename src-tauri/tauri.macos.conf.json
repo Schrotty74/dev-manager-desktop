@@ -5,7 +5,7 @@
   "app": {
     "windows": [
       {
-        "dragDropEnabled": false,
+        "dragDropEnabled": true,
         "fullscreen": false,
         "height": 720,
         "label": "main",

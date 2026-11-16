@@ -1,7 +1,8 @@
 import {ComponentFixture, DeferBlockBehavior, TestBed} from '@angular/core/testing';
 import {provideLocationMocks} from '@angular/common/testing';
 import {Router} from '@angular/router';
-import {emit} from '@tauri-apps/api/event';
+import {emit, TauriEvent} from '@tauri-apps/api/event';
+import {mockWindows} from '@tauri-apps/api/mocks';
 import {vi} from 'vitest';
 
 import {AppComponent} from './app.component';
@@ -9,6 +10,7 @@ import {AppModule} from './app.module';
 import {Device} from './types';
 import {UpdateService} from './core/services';
 import {AppearanceService} from './core/services/appearance.service';
+import {InstallQueueService} from './core/services/install-queue.service';
 import {RepositorySourcesService} from './core/services/repository-sources.service';
 import ReleaseInfo from '../release.json';
 import packageInfo from '../../package.json';
@@ -186,6 +188,52 @@ describe('App (mocked backend e2e)', () => {
             expect(fixture.nativeElement.querySelector('input[value="nord"]').checked).toBe(true);
         } finally {
             appearance.setTheme(original);
+        }
+    });
+
+    it('previews dropped IPKs and queues only valid files for the confirmed TV', async () => {
+        boot({
+            ...shellHandlers(),
+            'fs/stat': ({path}) => ({isFile: !path.endsWith('/folder.ipk')}),
+            'remote-command/exec': ({command}) => ({
+                stdout: command.startsWith('df ') ? 'Filesystem' : '{"returnValue":true,"apps":[]}',
+            }),
+        });
+        await router.navigate(['/home/devices']);
+        await settle();
+        mockWindows('main');
+        vi.stubGlobal('isTauri', true);
+        try {
+            await router.navigate(['/home/apps']);
+            await settle();
+            const queue = TestBed.inject(InstallQueueService);
+            const paths = ['/Downloads/first.IPK', '/Downloads/second.ipk', '/Downloads/folder.ipk', '/Downloads/notes.txt'];
+            const position = {x: 0, y: 0};
+
+            await emit(TauriEvent.DRAG_ENTER, {paths, position});
+            await settle();
+            expect(fixture.nativeElement.textContent).toContain('Drop IPK files');
+
+            await emit(TauriEvent.DRAG_DROP, {paths, position});
+            await settle();
+            const modal = document.querySelector('ngb-modal-window')!;
+            expect(modal.textContent).toContain('living-room');
+            expect(modal.textContent).toContain('first.IPK');
+            expect(modal.textContent).toContain('second.ipk');
+            expect(modal.textContent).toContain('Skipped files or folders: 2');
+            expect(queue.jobs()).toHaveLength(0);
+
+            modal.querySelector<HTMLButtonElement>('.modal-footer .btn-primary')!.click();
+            await settle();
+            expect(queue.jobs().map(job => [job.name, job.device.name, job.state])).toEqual([
+                ['first.IPK', 'living-room', 'pending'],
+                ['second.ipk', 'living-room', 'pending'],
+            ]);
+            await router.navigate(['/home/devices']);
+            await settle();
+        } finally {
+            fixture.destroy();
+            vi.unstubAllGlobals();
         }
     });
 

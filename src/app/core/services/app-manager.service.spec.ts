@@ -134,9 +134,9 @@ describe('AppManagerService developer installation', () => {
         expectIpkRemoved();
     });
     describe('Homebrew Channel installation', () => {
-        async function startHb() {
+        async function startHb(appId = APP_ID_HBCHANNEL) {
             deviceManager.getHbChannelConfig.mockResolvedValue({});
-            const manifest = {id: APP_ID_HBCHANNEL, ipkUrl: 'https://example.test/app.ipk'} as PackageManifest;
+            const manifest = {id: appId, ipkUrl: 'https://example.test/app.ipk'} as PackageManifest;
             const result = service.installByManifest(device, manifest).then(() => undefined, error => error);
             await vi.advanceTimersByTimeAsync(0);
             expect(luna.subscribe).toHaveBeenCalledWith(device,
@@ -162,11 +162,22 @@ describe('AppManagerService developer installation', () => {
             expect(file.put).not.toHaveBeenCalled();
         });
 
-        it('bounds a silent Homebrew Channel installation', async () => {
-            const {result} = await startHb();
-            await vi.advanceTimersByTimeAsync(idle + 5_000);
-            expect((await result).message).toContain('No installation response');
+        it('detects a silent Homebrew start without attempting a second installation', async () => {
+            const {result} = await startHb('org.example.app');
+            await vi.advanceTimersByTimeAsync(30_000 + 5_000);
+            expect((await result).message).toContain('No initial response from Homebrew Channel');
             expect(proc.isStopped).toBe(true);
+            expect(luna.subscribe).toHaveBeenCalledOnce();
+            expect(file.put).not.toHaveBeenCalled();
+        });
+
+        it('allows the normal inactivity window once Homebrew has sent progress', async () => {
+            const {result} = await startHb();
+            message({returnValue: true, progress: 10});
+            await vi.advanceTimersByTimeAsync(31_000);
+            message({returnValue: true, finished: true});
+            await vi.advanceTimersByTimeAsync(5_000);
+            expect(await result).toBeUndefined();
         });
     });
 

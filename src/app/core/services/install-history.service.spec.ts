@@ -23,6 +23,12 @@ describe('InstallHistoryService', () => {
         expect(JSON.stringify(service.entries)).not.toContain('192.0.2.1');
     });
 
+    it('keeps the failure phase alongside older entries', () => {
+        service.record(device, false);
+        service.record(device, false, {failurePhase: 'transfer'});
+        expect(service.entries.map(entry => entry.failurePhase)).toEqual(['transfer', undefined]);
+    });
+
     it('bounds retained entries to 100', () => {
         for (let i = 0; i < 105; i++) service.record(device, i % 2 === 0);
         expect(service.entries).toHaveLength(100);
