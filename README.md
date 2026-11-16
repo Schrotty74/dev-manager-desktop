@@ -4,9 +4,9 @@ Manage developer mode and apps on webOS TVs from macOS. This is the [Schrotty74 
 
 ## Download
 
-See the [latest fork release](https://github.com/Schrotty74/dev-manager-desktop/releases/latest) or download the Apple Silicon disk image for [version 1.99.24](https://github.com/Schrotty74/dev-manager-desktop/releases/tag/v1.99.24):
+See the [latest fork release](https://github.com/Schrotty74/dev-manager-desktop/releases/latest) or download the Apple Silicon disk image for [version 1.99.25](https://github.com/Schrotty74/dev-manager-desktop/releases/tag/v1.99.25):
 
-[`webOS-Dev-Manager_1.99.24_arm64.dmg`](https://github.com/Schrotty74/dev-manager-desktop/releases/download/v1.99.24/webOS-Dev-Manager_1.99.24_arm64.dmg)
+[`webOS-Dev-Manager_1.99.25_arm64.dmg`](https://github.com/Schrotty74/dev-manager-desktop/releases/download/v1.99.25/webOS-Dev-Manager_1.99.25_arm64.dmg)
 
 This build is for Apple Silicon Macs. It is ad-hoc signed and not notarized by Apple. macOS may require approval to open it; see [Apple's instructions](https://support.apple.com/en-us/102445).
 

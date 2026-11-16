@@ -4,8 +4,15 @@ Changes to the [Schrotty74 fork](https://github.com/Schrotty74/dev-manager-deskt
 of webOS Dev Manager are recorded here. Earlier upstream releases are listed in
 the [webosbrew release history](https://github.com/webosbrew/dev-manager-desktop/releases).
 
-## Unreleased
+## [1.99.25] - 2026-11-16
 
+- Drop one or more IPK files from Finder onto the Apps view. Review the files
+  and target TV before adding them to the installation queue. The Install button
+  can also select multiple IPKs.
+- See which step failed in the installation queue and history. Use Requeue
+  to try a failed job again on the same TV.
+- Report when Homebrew Channel sends no initial response within 30 seconds.
+  Check whether the app was installed on the TV before retrying.
 - Limit local builds to macOS on Apple Silicon. Remove Windows, Linux, and Android build files and assets while retaining the app's device-management features.
 
 ## [1.99.24] - 2026-11-02
@@ -98,3 +105,4 @@ First macOS release of this fork, built for Apple Silicon (arm64).
 [1.99.22]: https://github.com/Schrotty74/dev-manager-desktop/releases/tag/v1.99.22
 [1.99.23]: https://github.com/Schrotty74/dev-manager-desktop/releases/tag/v1.99.23
 [1.99.24]: https://github.com/Schrotty74/dev-manager-desktop/releases/tag/v1.99.24
+[1.99.25]: https://github.com/Schrotty74/dev-manager-desktop/releases/tag/v1.99.25
