@@ -4,6 +4,16 @@ Changes to the [Schrotty74 fork](https://github.com/Schrotty74/dev-manager-deskt
 of webOS Dev Manager are recorded here. Earlier upstream releases are listed in
 the [webosbrew release history](https://github.com/webosbrew/dev-manager-desktop/releases).
 
+## [1.99.26] - 2026-11-25
+
+- Rename the macOS app to TunerAtlas and add a new console icon.
+- Manage Enigma2 plugins over SSH. View installed packages and available feed
+  packages, install local IPKs, and apply plugin updates individually or together.
+- Show the receiver model, running system image, and Linux kernel version.
+- Read Enigma2 crash reports, follow existing Enigma2 debug logs, and view
+  kernel messages. Search logs and save them to your Mac.
+- Follow the OSCam WebIF log on port 8081, with decoded text you can search.
+
 ## [1.99.25] - 2026-11-16
 
 - Drop one or more IPK files from Finder onto the Apps view. Review the files
@@ -106,3 +116,4 @@ First macOS release of this fork, built for Apple Silicon (arm64).
 [1.99.23]: https://github.com/Schrotty74/dev-manager-desktop/releases/tag/v1.99.23
 [1.99.24]: https://github.com/Schrotty74/dev-manager-desktop/releases/tag/v1.99.24
 [1.99.25]: https://github.com/Schrotty74/dev-manager-desktop/releases/tag/v1.99.25
+[1.99.26]: https://github.com/Schrotty74/dev-manager-desktop/releases/tag/v1.99.26

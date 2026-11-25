@@ -2,6 +2,7 @@ import {NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {DebugRoutingModule} from "./debug-routing.module";
 import {DebugComponent} from './debug.component';
+import {ReceiverLogsComponent} from './receiver-logs/receiver-logs.component';
 import {NgbNavModule, NgbTooltipModule} from "@ng-bootstrap/ng-bootstrap";
 import {CrashesComponent} from "./crashes/crashes.component";
 import {SharedModule} from "../shared/shared.module";
@@ -26,6 +27,7 @@ import {SizeCalculatorComponent} from "../shared/components/term-size-calculator
 @NgModule({
     declarations: [
         DebugComponent,
+        ReceiverLogsComponent,
         CrashesComponent,
         PmLogComponent,
         LogReaderComponent,

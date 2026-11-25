@@ -7,7 +7,7 @@
           <option [ngValue]="dev.name" [selected]="dev.name === device?.name">{{ dev.name }}</option>
         }
       </select>
-      <ul ngbNav #nav="ngbNav" class="nav-pills flex-nowrap ms-2" [(activeId)]="tabId">
+      <ul ngbNav #nav="ngbNav" class="nav-pills flex-nowrap ms-2" [class.d-none]="deviceKind !== 'webos'" [(activeId)]="tabId">
         <li ngbNavItem="installed">
           <a ngbNavLink>Installed</a>
           <ng-template ngbNavContent>
@@ -25,16 +25,30 @@
           <ng-template ngbNavContent><app-install-history/></ng-template>
         </li>
       </ul>
-      <button class="btn btn-primary text-nowrap ms-auto" [disabled]="!device" (click)="openInstallChooser()">
-        <i class="bi bi-folder-fill me-2"></i>Install
-      </button>
+      @if (deviceKind === 'webos') {
+        <button class="btn btn-primary text-nowrap ms-auto" [disabled]="!device" (click)="openInstallChooser()">
+          <i class="bi bi-folder-fill me-2"></i>Install
+        </button>
+      }
     </div>
   </nav>
   @if (draggingIpk) {
     <div class="border-bottom bg-panel px-3 py-2" role="status">Drop IPK files to review them before adding them to the queue.</div>
   }
-  <div class="p-3 flex-fill overflow-auto" [ngbNavOutlet]="nav"></div>
-  @if (queue.jobs().length) {
+  @switch (deviceKind) {
+    @case ('checking') {
+      <div class="p-3 flex-fill"><app-loading-card/></div>
+    }
+    @case ('receiver') {
+      @if (device; as receiverDevice) {
+        <app-receiver-apps class="flex-fill overflow-hidden" [device]="receiverDevice"/>
+      }
+    }
+    @default {
+      <div class="p-3 flex-fill overflow-auto" [ngbNavOutlet]="nav"></div>
+    }
+  }
+  @if (deviceKind === 'webos' && queue.jobs().length) {
     <section class="border-top p-2 overflow-auto" aria-label="Installation queue" style="max-height: 240px">
       <div class="d-flex gap-2 flex-wrap align-items-center">
         <strong>Installation queue</strong>

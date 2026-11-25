@@ -1,0 +1,62 @@
+<section class="p-3 h-100 overflow-auto" aria-labelledby="receiver-plugins-heading">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <h2 class="h5 mb-0" id="receiver-plugins-heading">Enigma2 plugins</h2>
+    <div class="d-flex flex-wrap gap-2">
+      <button type="button" class="btn btn-sm btn-outline-primary" [disabled]="!!busy()"
+              (click)="checkUpdates()">Check for updates</button>
+      @if (pendingUpdates().length) {
+        <button type="button" class="btn btn-sm btn-outline-primary" [disabled]="!!busy()"
+                (click)="updateAll()">Update all ({{ pendingUpdates().length }})</button>
+      }
+      <button type="button" class="btn btn-sm btn-primary" [disabled]="!!busy()"
+              (click)="installLocal()">Install IPK</button>
+    </div>
+  </div>
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+    <div class="btn-group btn-group-sm" role="group" aria-label="Package view">
+      <button type="button" class="btn btn-outline-secondary" [class.active]="view() === 'installed'"
+              [attr.aria-pressed]="view() === 'installed'" (click)="view.set('installed')">Installed</button>
+      <button type="button" class="btn btn-outline-secondary" [class.active]="view() === 'available'"
+              [attr.aria-pressed]="view() === 'available'" (click)="view.set('available')">Available</button>
+      <button type="button" class="btn btn-outline-secondary" [class.active]="view() === 'updates'"
+              [attr.aria-pressed]="view() === 'updates'" (click)="view.set('updates')">Updates ({{ pendingUpdates().length }})</button>
+    </div>
+    <input type="search" class="form-control form-control-sm w-auto" placeholder="Search plugins" aria-label="Search plugins"
+           [value]="query()" (input)="query.set(search.value)" #search>
+    <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="!!busy()" (click)="refresh()">Reload</button>
+  </div>
+  @if (busy() || notice()) {
+    <p class="small text-body-secondary mb-2" role="status">{{ busy() || notice() }}</p>
+  }
+  @if (error(); as problem) {
+    <app-error-card title="Receiver package operation failed" [error]="problem" (retry)="refresh()"/>
+  }
+  @if (catalog()) {
+    <ul class="list-group list-group-flush">
+      @for (pkg of visible(); track pkg.name) {
+        <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div class="text-break">
+            <div>{{ pkg.name }}</div>
+            <small class="text-body-secondary">{{ pkg.version }}@if (pkg.update) { → {{ pkg.update }} }</small>
+          </div>
+          @if (view() === 'available') {
+            <button type="button" class="btn btn-sm btn-outline-primary" [disabled]="!!busy()"
+                    (click)="changePlugin(pkg, 'install')">Install</button>
+          } @else if (pkg.update) {
+            <button type="button" class="btn btn-sm btn-outline-primary" [disabled]="!!busy()"
+                    (click)="changePlugin(pkg, 'upgrade')">Update</button>
+          }
+        </li>
+      } @empty {
+        <li class="list-group-item text-body-secondary">
+          {{ query().trim() ? 'No matching plugins.' :
+              view() === 'updates' ? 'No plugin updates in the current package lists.' :
+              view() === 'available' ? 'No installable plugins in the current package lists. Check for updates to refresh the feeds.' :
+              'No installed Enigma2 plugin packages found.' }}
+        </li>
+      }
+    </ul>
+  } @else if (busy()) {
+    <app-loading-card/>
+  }
+</section>

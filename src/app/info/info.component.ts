@@ -9,6 +9,7 @@ import {
     DeviceManagerService,
     DevModeService,
     DevModeStatus,
+    ReceiverInfo,
     RepositoryItem,
     ScreenshotMethod,
 } from '../core/services';
@@ -31,6 +32,7 @@ import {fromPromise} from "rxjs/internal/observable/innerFrom";
 export class InfoComponent implements OnInit, OnDestroy {
     device: Device | null = null;
     deviceInfo: DeviceInfo | null = null;
+    receiverInfo: ReceiverInfo | null = null;
     devModeInfo: DevModeStatus | null = null;
     devModeExpiryWarning$?: Observable<boolean>;
     homebrewAppInfo: RawPackageInfo | null = null;
@@ -55,6 +57,7 @@ export class InfoComponent implements OnInit, OnDestroy {
         this.deviceSubscription = this.deviceManager.selected$.subscribe((selected) => {
             this.device = selected;
             this.deviceInfo = null;
+            this.receiverInfo = null;
             this.devModeInfo = null;
             this.devModeExpiryWarning$ = undefined;
             this.homebrewAppInfo = null;
@@ -73,10 +76,17 @@ export class InfoComponent implements OnInit, OnDestroy {
         if (!device) return;
         this.infoError = null;
         this.infoSubscription?.unsubscribe();
-        this.infoSubscription = fromPromise(this.deviceManager.getDeviceInfo(device)).subscribe({
+        const load = async () => {
+            const receiver = await this.deviceManager.getReceiverInfo(device, true).catch(() => null);
+            return receiver ? {receiver} : {webos: await this.deviceManager.getDeviceInfo(device)};
+        };
+        this.infoSubscription = fromPromise(load()).subscribe({
             next: (info) => {
-                this.deviceInfo = info;
-                Promise.allSettled([this.loadDevModeInfo(device), this.loadHomebrewInfo(device)]).then(noop);
+                this.receiverInfo = info.receiver ?? null;
+                this.deviceInfo = info.webos ?? null;
+                if (info.webos) {
+                    Promise.allSettled([this.loadDevModeInfo(device), this.loadHomebrewInfo(device)]).then(noop);
+                }
             },
             error: (e) => {
                 this.infoError = e;

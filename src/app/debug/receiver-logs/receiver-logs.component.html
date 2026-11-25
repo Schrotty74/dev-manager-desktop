@@ -1,0 +1,36 @@
+<div class="w-100 h-100 d-flex flex-column overflow-hidden">
+  <div class="d-flex flex-wrap align-items-center gap-2 p-2 border-bottom">
+    @if (files?.length) {
+      <select class="form-select form-select-sm w-auto mw-100" aria-label="Log file"
+              [value]="selected?.path ?? ''" (change)="selectLog(logFile.value)" #logFile>
+        @for (file of files; track file.path) {
+          <option [value]="file.path">{{ file.modified | date:'short' }} · {{ file.name }}</option>
+        }
+      </select>
+    }
+    <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="loading" (click)="refresh()">Refresh</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="!source" (click)="reader.toggleSearchBar()">Search</button>
+    @if (kind !== 'oscam') {
+      <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="!source || saving" (click)="saveLog()">Save log</button>
+    }
+    @if (kind === 'enigma' && selected) {
+      <button type="button" class="btn btn-sm btn-outline-primary" [disabled]="loading" (click)="toggleFollow()">
+        {{ following ? 'Stop following' : 'Follow log' }}
+      </button>
+    }
+    @if (selected && !loading) {
+      <small class="text-body-secondary">{{ following ? 'Following new lines' : 'Last 2,000 lines' }}</small>
+    }
+  </div>
+  @if (error) {
+    <div class="p-2"><app-error-card title="Receiver log error" [error]="error" (retry)="refresh()"/></div>
+  } @else if (loading) {
+    <div class="p-2"><app-loading-card/></div>
+  } @else if (files?.length === 0) {
+    <p class="p-3 text-body-secondary">
+      {{ kind === 'crash' ? 'No Enigma2 crash logs found.' : 'No Enigma2 debug logs found.' }}
+    </p>
+  }
+  <app-log-reader class="flex-fill overflow-hidden" [source]="source"
+                  [fontSize]="kind === 'oscam' || kind === 'kernel' ? 13 : undefined" #reader/>
+</div>

@@ -9,6 +9,12 @@ import {RemoteCommandService} from "./remote-command.service";
 import {RemoteFileService} from "./remote-file.service";
 import * as path from "@tauri-apps/api/path";
 
+export interface ReceiverInfo {
+    model: string;
+    image: string;
+    kernel: string;
+}
+
 export type ScreenshotMethod = 'DISPLAY' | 'VIDEO' | 'GRAPHIC';
 
 @Injectable({
@@ -105,6 +111,57 @@ export class DeviceManagerService extends BackendClient {
             subscribe: false,
             params: {extend: true}
         }, true);
+    }
+
+    async getReceiverInfo(device: Device, readBranding = false): Promise<ReceiverInfo | null> {
+        const commands = [
+            'if ! command -v enigma2 >/dev/null 2>&1 && [ ! -x /usr/bin/enigma2 ]; then exit 0; fi',
+            'printf "enigma2\\n"',
+            'model=$(cat /proc/stb/info/vumodel 2>/dev/null)',
+            'if [ -z "$model" ]; then model=$(cat /proc/stb/info/model 2>/dev/null || hostname); fi',
+            'printf "%s\\n" "$model"',
+            'uname -r',
+            'image=$(sed -n "s/^PRETTY_NAME=//p" /etc/os-release 2>/dev/null)',
+            'printf "%s\\n" "$image"',
+        ];
+        if (readBranding) {
+            commands.push('curl -fsS --max-time 2 http://127.0.0.1/api/about 2>/dev/null || ' +
+                'wget -q -T 2 -t 1 -O - http://127.0.0.1/api/about 2>/dev/null || true');
+        }
+        const output = await this.cmd.exec(device, commands.join('; '), 'utf-8');
+        const [kind, model, kernel, image, ...branding] = output.split(/\r?\n/);
+        if (kind !== 'enigma2') return null;
+
+        const systemImage = image?.trim().replace(/^"(.*)"$/, '$1') || '';
+        const fallbackModel = /^(?:vu)?uno4kse$/i.test(model?.trim()) ? 'Vu+ Uno 4K SE' : model?.trim();
+        const info = {model: fallbackModel || device.name, kernel: kernel?.trim() || '', image: systemImage};
+        const about = branding.join('\n').trim();
+        if (!about) return info;
+
+        try {
+            const response = JSON.parse(about) as {info?: Record<string, unknown>};
+            const field = (name: string) => {
+                const value = response.info?.[name];
+                return typeof value === 'string' ? value.trim() : '';
+            };
+            const brand = field('brand');
+            const product = field('model').replace(/([^\s])(4K\b)/gi, '$1 $2');
+            const imageName = field('friendlyimagedistro') || field('imagedistro');
+            const imageVersion = field('imagever');
+            if (product) {
+                info.model = brand && !product.toLowerCase().startsWith(brand.toLowerCase())
+                    ? [brand, product].join(' ') : product;
+            }
+            if (imageName && imageVersion) {
+                info.image = imageVersion.toLowerCase().startsWith(imageName.toLowerCase())
+                    ? imageVersion : [imageName, imageVersion].join(' · ');
+            } else {
+                info.image = imageName || systemImage || imageVersion;
+            }
+        } catch {
+            // SSH still provides the device info when OpenWebif is unavailable.
+        }
+        return info;
     }
 
     async getDeviceInfo(device: DeviceLike): Promise<DeviceInfo> {

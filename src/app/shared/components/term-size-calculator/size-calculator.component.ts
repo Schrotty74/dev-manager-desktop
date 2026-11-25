@@ -66,7 +66,10 @@ export class SizeCalculatorComponent implements OnInit, AfterViewInit, OnDestroy
         this.termResize = this.term.onResize((size) => this.sizeChange.emit(size));
     }
 
+    @Input() fontSize?: number;
+
     ngAfterViewInit(): void {
+        if (this.fontSize !== undefined) this.term.options.fontSize = this.fontSize;
         this.term.open(this.termwin.nativeElement);
         firstValueFrom(defer(() => of(this.fitAddon.proposeDimensions())).pipe(
             delay(1),

@@ -7,6 +7,6 @@
 	     Privacy & Security > Local Network. Each connection to the TV then
 	     fails with EHOSTUNREACH ("No route to host"). See #417. -->
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>webOS Dev Manager connects to your TV on the local network to set up developer mode and manage apps.</string>
+	<string>TunerAtlas connects to TVs and receivers on your local network so you can manage apps, plugins, and files.</string>
 </dict>
 </plist>

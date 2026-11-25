@@ -1,4 +1,5 @@
 import {ReplaySubject} from 'rxjs';
+import {Buffer} from 'buffer';
 import {vi} from 'vitest';
 import {RemoteLogService, LogMessage} from './remote-log.service';
 import {CommandData, CommandSubject, RemoteCommandService} from './remote-command.service';
@@ -65,5 +66,78 @@ describe('RemoteLogService PmLog parsing', () => {
 
     it('omits empty and whitespace-only lines', async () => {
         expect(await read('', '  ', '\t')).toEqual([]);
+    });
+});
+
+describe('RemoteLogService Enigma2 logs', () => {
+    it('orders crash files by modification time and reads or exports the selected file', async () => {
+        const exec = vi.fn().mockResolvedValueOnce(
+            '1700000000 /home/root/enigma2_crash_1.log\n' +
+            '1800000000 /media/hdd/enigma2_crash_2.log\n' +
+            '1800000000 /media/hdd/enigma2_crash_2.log\n',
+        ).mockResolvedValueOnce('traceback').mockResolvedValueOnce(Buffer.from('full log'));
+        const service = new RemoteLogService({exec} as unknown as RemoteCommandService);
+        const logs = await service.listReceiverLogs(device, 'crash');
+        expect(logs.map(file => file.name)).toEqual(['enigma2_crash_2.log', 'enigma2_crash_1.log']);
+        expect(exec.mock.calls[0][1]).toContain('/home/root /home/root/logs /media/hdd /tmp');
+        expect(exec.mock.calls[0][1]).toContain('enigma2_crash*.log');
+
+        await expect(service.readReceiverLog(device, logs[0])).resolves.toBe('traceback');
+        expect(exec).toHaveBeenNthCalledWith(2, device, "tail -n 2000 '/media/hdd/enigma2_crash_2.log'", 'utf-8');
+        await expect(service.exportReceiverLog(device, logs[0])).resolves.toEqual(Buffer.from('full log'));
+        expect(exec).toHaveBeenNthCalledWith(3, device, "cat '/media/hdd/enigma2_crash_2.log'", 'buffer');
+    });
+
+    it('reads the kernel log without clearing or following its buffer', async () => {
+        const exec = vi.fn().mockResolvedValue('[0.0] Booting Linux');
+        const service = new RemoteLogService({exec} as unknown as RemoteCommandService);
+        await expect(service.readReceiverLog(device, null)).resolves.toBe('[0.0] Booting Linux');
+        expect(exec).toHaveBeenCalledExactlyOnceWith(device, 'dmesg', 'utf-8');
+    });
+
+    it('interrupts the remote follow command even if the tab closes while SSH is opening', async () => {
+        const stream = new ReplaySubject<CommandData<string>>() as CommandSubject<string>;
+        stream.write = vi.fn().mockResolvedValue(undefined);
+        const popen = vi.fn().mockResolvedValue(stream);
+        const service = new RemoteLogService({popen} as unknown as RemoteCommandService);
+        const next = vi.fn();
+        const subscription = service.followReceiverLog(device, {
+            path: '/home/root/enigma.20261125.debuglog', name: 'enigma.20261125.debuglog', modified: 0,
+        }).subscribe(next);
+        subscription.unsubscribe();
+        await Promise.resolve();
+        expect(popen).toHaveBeenCalledExactlyOnceWith(
+            device, "exec tail -n 2000 -f '/home/root/enigma.20261125.debuglog'", 'utf-8',
+        );
+        expect(stream.write).toHaveBeenCalledOnce();
+        expect(next).not.toHaveBeenCalled();
+    });
+});
+
+describe('RemoteLogService OSCam live log', () => {
+    it('decodes OSCam lines, advances the cursor and stops polling on unsubscribe', async () => {
+        vi.useFakeTimers();
+        try {
+            const exec = vi.fn()
+                .mockResolvedValueOnce(JSON.stringify({oscam: {uptime: '00:02:00', lines: [
+                    {id: '4', line: Buffer.from('2026/11/25 06:58:00 Sender Österreich CAID 1702', 'utf-8').toString('base64')},
+                ]}}))
+                .mockResolvedValueOnce(JSON.stringify({oscam: {uptime: '00:02:02', lines: [
+                    {id: '4', line: 'duplicate'},
+                    {id: '5', line: 'Channel B CAID 1830'},
+                ]}}));
+            const service = new RemoteLogService({exec} as unknown as RemoteCommandService);
+            const received: string[] = [];
+            const subscription = service.watchOscamLog(device).subscribe(line => received.push(line));
+            await vi.advanceTimersByTimeAsync(2000);
+            expect(received).toEqual(['2026/11/25 06:58:00 Sender Österreich CAID 1702', 'Channel B CAID 1830']);
+            expect(exec.mock.calls[0][1]).toContain('127.0.0.1:8081/logpoll.html?lastid=0');
+            expect(exec.mock.calls[1][1]).toContain('127.0.0.1:8081/logpoll.html?lastid=4');
+            subscription.unsubscribe();
+            await vi.advanceTimersByTimeAsync(4000);
+            expect(exec).toHaveBeenCalledTimes(2);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 });

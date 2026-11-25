@@ -7,7 +7,7 @@
     "frontendDist": "../dist"
   },
   "identifier": "org.webosbrew.devman",
-  "productName": "webOS Dev Manager",
+  "productName": "TunerAtlas",
   "version": "../package.json",
   "app": {
     "security": {
@@ -23,7 +23,7 @@
         "minHeight": 600,
         "minWidth": 420,
         "resizable": true,
-        "title": "webOS Dev Manager",
+        "title": "TunerAtlas",
         "visible": true,
         "width": 1024
       }
@@ -46,7 +46,7 @@
       "icons/128x128@2x.png",
       "icons/icon.icns"
     ],
-    "longDescription": "Manage developer-mode or rooted LG webOS TVs from macOS. Install apps from Homebrew Channel and custom catalogs, manage files, use SSH terminals, and configure native macOS glass effects and themes.",
+    "longDescription": "Manage LG webOS TVs and Enigma2 receivers from your Mac. Install and update apps or plugins, browse files, open SSH terminals, and read device logs.",
     "macOS": {
       "entitlements": null,
       "exceptionDomain": "",
@@ -58,7 +58,7 @@
     "resources": {
       "../LICENSE": "LICENSE"
     },
-    "shortDescription": "Device/Dev Mode Manager for webOS TV",
+    "shortDescription": "Device manager for webOS TVs and Enigma2 receivers",
     "targets": [
       "app",
       "dmg"

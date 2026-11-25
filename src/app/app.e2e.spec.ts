@@ -196,7 +196,8 @@ describe('App (mocked backend e2e)', () => {
             ...shellHandlers(),
             'fs/stat': ({path}) => ({isFile: !path.endsWith('/folder.ipk')}),
             'remote-command/exec': ({command}) => ({
-                stdout: command.startsWith('df ') ? 'Filesystem' : '{"returnValue":true,"apps":[]}',
+                stdout: command.startsWith('df ') ? 'Filesystem' :
+                    command.includes('command -v enigma2') ? '' : '{"returnValue":true,"apps":[]}',
             }),
         });
         await router.navigate(['/home/devices']);
@@ -206,6 +207,10 @@ describe('App (mocked backend e2e)', () => {
         try {
             await router.navigate(['/home/apps']);
             await settle();
+            await vi.waitFor(() => {
+                fixture.detectChanges();
+                expect(fixture.nativeElement.querySelector('app-apps nav button')).toBeTruthy();
+            });
             const queue = TestBed.inject(InstallQueueService);
             const paths = ['/Downloads/first.IPK', '/Downloads/second.ipk', '/Downloads/folder.ipk', '/Downloads/notes.txt'];
             const position = {x: 0, y: 0};
@@ -235,6 +240,60 @@ describe('App (mocked backend e2e)', () => {
             fixture.destroy();
             vi.unstubAllGlobals();
         }
+    });
+
+    it('lists receiver plugins and system info over SSH without querying webOS', async () => {
+        const execute = vi.fn(({command}) => {
+            if (command.includes('command -v enigma2')) {
+                const metadata = command.includes('/api/about')
+                    ? JSON.stringify({info: {brand: 'Vu+', model: 'Uno4K SE',
+                        friendlyimagedistro: 'OpenPLi', imagever: 'scarthgap.8a4b48d9'}})
+                    : '';
+                return {stdout: 'enigma2\ndm8000\n5.15.0\n"Receiver Image"\n' + metadata};
+            }
+            if (command.includes('opkg list-installed')) {
+                return {stdout: [
+                    'enigma2-plugin-extensions-openwebif - 2.4.1',
+                    'busybox - 1.36.1',
+                    '---available---',
+                    'enigma2-plugin-extensions-openwebif - 2.5.0 - Web interface',
+                    'enigma2-plugin-extensions-example - 1.0 - Example plugin',
+                    '---upgradable---',
+                    'enigma2-plugin-extensions-openwebif - 2.4.1 - 2.5.0',
+                    '',
+                ].join('\n')};
+            }
+            if (command.startsWith('df ')) return {stdout: 'Filesystem'};
+            throw new Error('Unexpected receiver command');
+        });
+        boot({
+            ...shellHandlers(),
+            'device-manager/list': () => [{...devices[0], name: 'vu'}],
+            'remote-command/exec': execute,
+        });
+
+        await router.navigate(['/home/apps']);
+        await settle();
+        await vi.waitFor(() => {
+            fixture.detectChanges();
+            const plugins = fixture.nativeElement.querySelector('section[aria-labelledby="receiver-plugins-heading"]');
+            expect(plugins?.textContent).toContain('enigma2-plugin-extensions-openwebif');
+            expect(plugins?.textContent).toContain('2.4.1');
+            expect(plugins?.textContent).not.toContain('busybox');
+            expect(plugins?.textContent).toContain('2.5.0');
+            expect(plugins?.textContent).toContain('Updates (1)');
+        });
+
+        await router.navigate(['/home/info']);
+        await settle();
+        await vi.waitFor(() => {
+            fixture.detectChanges();
+            const info = fixture.nativeElement.querySelector('app-info');
+            expect(info?.textContent).toContain('Vu+ Uno 4K SE');
+            expect(info?.textContent).toContain('OpenPLi · scarthgap.8a4b48d9');
+            expect(info?.textContent).toContain('5.15.0');
+        });
+        expect(execute.mock.calls.some(([{command}]) => command.includes('luna-send'))).toBe(false);
     });
 
     it('opens package sources from Settings and restores a portable source backup', async () => {

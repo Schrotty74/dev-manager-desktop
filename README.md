@@ -1,18 +1,28 @@
-# webOS Dev Manager
+# TunerAtlas
 
-Manage developer mode and apps on webOS TVs from macOS. This is the [Schrotty74 fork](https://github.com/Schrotty74/dev-manager-desktop) of [webOS Dev Manager](https://github.com/webosbrew/dev-manager-desktop).
+<img src="src-tauri/icons/128x128@2x.png" alt="TunerAtlas app icon" width="128" height="128">
+
+Manage apps, plugins, files, and SSH sessions on LG webOS TVs and Enigma2 receivers from your Mac. TunerAtlas began as the [Schrotty74 fork](https://github.com/Schrotty74/dev-manager-desktop) of [webOS Dev Manager](https://github.com/webosbrew/dev-manager-desktop).
 
 ## Download
 
-See the [latest fork release](https://github.com/Schrotty74/dev-manager-desktop/releases/latest) or download the Apple Silicon disk image for [version 1.99.25](https://github.com/Schrotty74/dev-manager-desktop/releases/tag/v1.99.25):
+See the [latest fork release](https://github.com/Schrotty74/dev-manager-desktop/releases/latest) or download the Apple Silicon disk image for [version 1.99.26](https://github.com/Schrotty74/dev-manager-desktop/releases/tag/v1.99.26):
 
-[`webOS-Dev-Manager_1.99.25_arm64.dmg`](https://github.com/Schrotty74/dev-manager-desktop/releases/download/v1.99.25/webOS-Dev-Manager_1.99.25_arm64.dmg)
+[`TunerAtlas_1.99.26_arm64.dmg`](https://github.com/Schrotty74/dev-manager-desktop/releases/download/v1.99.26/TunerAtlas_1.99.26_arm64.dmg)
 
 This build is for Apple Silicon Macs. It is ad-hoc signed and not notarized by Apple. macOS may require approval to open it; see [Apple's instructions](https://support.apple.com/en-us/102445).
 
 ## Features
 
-### Apps and package sources
+### Enigma2 receivers
+
+- Browse installed plugins and packages available from the receiver’s feeds. Install a local IPK or choose a plugin from the feed.
+- Check for plugin updates. Install them individually or select **Update all** to install the available plugin updates in one operation.
+- Open **Info** to see the receiver model, the system image it is running, and the kernel version.
+- Open **Debug** for crash reports, Enigma2 logs, kernel messages, and the OSCam Live Log. The OSCam view decodes entries from WebIF on port 8081 so you can read them as they arrive.
+- Use the built-in SSH terminal and file manager with the receiver.
+
+### webOS apps and package sources
 
 - Install local IPK files or apps from Homebrew Channel and custom JSON catalogs. Launch, update, and uninstall apps; install beta packages when a catalog provides them.
 - Add and remove custom sources using HTTPS catalog addresses or supported GitHub repository URLs. Homebrew Channel remains the protected default source.

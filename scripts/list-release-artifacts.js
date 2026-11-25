@@ -10,11 +10,12 @@ const pattern = path.join(targetDir, 'aarch64-apple-darwin/release/bundle/dmg/*.
 const images = Array.from(fs.globSync(pattern));
 if (!images.length) throw new Error('No Apple Silicon DMG was found.');
 const version = require('../package.json').version;
-const expected = `webOS Dev Manager_${version}_aarch64.dmg`;
+const {productName} = require('../src-tauri/tauri.conf.json');
+const expected = `${productName}_${version}_aarch64.dmg`;
 const image = images.find(file => path.basename(file) === expected);
 if (!image) throw new Error(`Missing current-version DMG: ${expected}`);
 fs.mkdirSync('release', {recursive: true});
-const filename = `webOS-Dev-Manager_${version}_arm64.dmg`;
+const filename = `${productName.replaceAll(' ', '-')}_${version}_arm64.dmg`;
 const destination = path.join('release', filename);
 fs.copyFileSync(image, destination);
 const sha = crypto.createHash('sha256').update(fs.readFileSync(destination)).digest('hex');

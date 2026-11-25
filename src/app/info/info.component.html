@@ -12,6 +12,25 @@
     @if (infoError) {
       <app-error-card [error]="infoError" title="Unable to get device info" (retry)="loadInfo()"/>
     }
+    @if (receiverInfo; as receiver) {
+      <div class="card">
+        <div class="card-body">
+          <h2 class="h5 card-title">{{ receiver.model }}</h2>
+          <dl class="mb-0">
+            <dt>Platform</dt>
+            <dd>Enigma2</dd>
+            @if (receiver.image) {
+              <dt>System image</dt>
+              <dd class="user-select-text">{{ receiver.image }}</dd>
+            }
+            @if (receiver.kernel) {
+              <dt>Linux kernel</dt>
+              <dd class="user-select-text mb-0">{{ receiver.kernel }}</dd>
+            }
+          </dl>
+        </div>
+      </div>
+    }
     @if (deviceInfo) {
       <div class="card">
         <div class="card-body">

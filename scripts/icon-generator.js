@@ -10,12 +10,13 @@ async function run() {
   if (process.platform !== 'darwin') throw new Error('Generate app icons on macOS.');
   const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'webos-macos-icons-'));
   try {
-    await cli.run(['icon', '-o', temporary, 'resources/icon/desktop.svg'], null);
+    await cli.run(['icon', '-o', temporary, 'resources/icon/tuner-atlas.png'], null);
     await fs.mkdir('src-tauri/icons', {recursive: true});
     // Tauri generates a full icon set; retain only the macOS app icon and PNGs.
     for (const name of ['icon.icns', 'icon.png', '32x32.png', '128x128.png', '128x128@2x.png']) {
       await fs.copyFile(path.join(temporary, name), path.join('src-tauri/icons', name));
     }
+    await fs.copyFile(path.join(temporary, '128x128.png'), 'src/assets/icons/favicon.png');
   } finally {
     await fs.rm(temporary, {recursive: true, force: true});
   }

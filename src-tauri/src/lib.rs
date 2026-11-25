@@ -110,7 +110,7 @@ fn handle_error(e: &tauri::Error) {
     let msg = error_message(e);
     DialogBuilder::message()
         .set_level(MessageLevel::Error)
-        .set_title("webOS Dev Manager")
+        .set_title("TunerAtlas")
         .set_text(&msg)
         .alert()
         .show()

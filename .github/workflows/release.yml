@@ -34,6 +34,6 @@ jobs:
         run: node scripts/list-release-artifacts.js
       - uses: actions/upload-artifact@v4
         with:
-          name: webos-dev-manager-macos-arm64
+          name: tuneratlas-macos-arm64
           path: ${{ steps.artifacts.outputs.paths }}
           if-no-files-found: error

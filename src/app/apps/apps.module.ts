@@ -11,6 +11,7 @@ import {HbchannelRemoveComponent} from './hbchannel-remove/hbchannel-remove.comp
 import {FormsModule} from "@angular/forms";
 
 import {HistoryComponent} from './history/history.component';
+import {ReceiverAppsComponent} from './receiver-apps/receiver-apps.component';
 
 @NgModule({
     declarations: [
@@ -25,6 +26,7 @@ import {HistoryComponent} from './history/history.component';
         NgbNavModule,
         NgbPaginationModule,
         AppsRoutingModule,
+        ReceiverAppsComponent,
         SharedModule,
         NgbDropdownModule,
         NgbProgressbar,

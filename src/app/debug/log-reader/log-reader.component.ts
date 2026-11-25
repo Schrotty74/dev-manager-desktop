@@ -84,9 +84,13 @@ export class LogReaderComponent implements OnInit, OnDestroy, AfterViewInit {
     ngOnDestroy(): void {
         this.searchTextSubscription?.unsubscribe();
         this.sourceSubscription?.unsubscribe();
+        this.term.dispose();
     }
 
+    @Input() fontSize?: number;
+
     ngAfterViewInit(): void {
+        if (this.fontSize !== undefined) this.term.options.fontSize = this.fontSize;
         this.term.open(this.termwin.nativeElement);
     }
 
@@ -97,7 +101,7 @@ export class LogReaderComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     @Input()
-    set source(source: Observable<LogMessage> | undefined) {
+    set source(source: Observable<LogMessage | string> | undefined) {
         this.sourceSubscription?.unsubscribe();
         this.sourceSubscription = undefined;
         this.term.clear();
@@ -118,7 +122,11 @@ export class LogReaderComponent implements OnInit, OnDestroy, AfterViewInit {
         return {cols: this.term.cols, rows: this.term.rows};
     }
 
-    private writeLog(message: LogMessage): void {
+    private writeLog(message: LogMessage | string): void {
+        if (typeof message === 'string') {
+            this.term.writeln(message.replace(/(?!\t)\p{Cc}/gu, ''));
+            return;
+        }
         const levelStyle = this.messageStyles[message.level] ?? chalk.white;
         this.term.write(chalk.green(`[${message.datetime.toISOTime({includeOffset: false})}]`));
         this.term.write(levelStyle(`[${message.level.toUpperCase()}]`));

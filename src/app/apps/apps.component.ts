@@ -44,6 +44,7 @@ export class AppsComponent implements OnInit, OnDestroy {
     tabId: string = 'installed';
     draggingIpk = false;
     localSelection?: LocalSelection;
+    deviceKind: 'checking' | 'webos' | 'receiver' = 'webos';
 
     @ViewChild('confirmLocalInstall') confirmLocalInstall!: TemplateRef<{$implicit: NgbActiveModal}>;
 
@@ -69,23 +70,22 @@ export class AppsComponent implements OnInit, OnDestroy {
         this.deviceSubscription = this.deviceManager.selected$.subscribe((device) => {
             this.device = device;
             this.instPackages = undefined;
-            if (device) {
-                this.loadPackages();
-            } else {
-                this.packages$ = undefined;
-                this.packagesSubscription?.unsubscribe();
-                this.packagesSubscription = undefined;
-            }
+            this.packages$ = undefined;
+            this.packagesSubscription?.unsubscribe();
+            this.packagesSubscription = undefined;
+            this.draggingIpk = false;
+            this.deviceKind = device ? 'checking' : 'webos';
+            if (device) void this.loadDeviceApps(device);
         });
         if (isTauri()) {
             void getCurrentWindow().onDragDropEvent(({payload}) => this.zone.run(() => {
                 if (this.destroyed) return;
                 if (payload.type === 'enter') {
-                    this.draggingIpk = !!this.device && !this.modalService.hasOpenModals() && payload.paths.some(isIpk);
+                    this.draggingIpk = this.deviceKind === 'webos' && !!this.device && !this.modalService.hasOpenModals() && payload.paths.some(isIpk);
                 } else if (payload.type === 'leave' || payload.type === 'drop') {
                     this.draggingIpk = false;
                 }
-                if (payload.type === 'drop' && this.device && !this.modalService.hasOpenModals()) {
+                if (payload.type === 'drop' && this.deviceKind === 'webos' && this.device && !this.modalService.hasOpenModals()) {
                     const device = {...this.device};
                     void this.chooseLocalFiles(device, async () => payload.paths);
                 }
@@ -104,6 +104,14 @@ export class AppsComponent implements OnInit, OnDestroy {
         this.packagesSubscription = undefined;
     }
 
+    private async loadDeviceApps(device: Device): Promise<void> {
+        // Let the existing webOS loader report connection errors if probing fails.
+        const receiver = await this.deviceManager.getReceiverInfo(device).catch(() => null);
+        if (this.destroyed || this.device !== device) return;
+        this.deviceKind = receiver ? 'receiver' : 'webos';
+        if (!receiver) this.loadPackages();
+    }
+
     loadPackages(): void {
         const device = this.device;
         if (!device) return;
@@ -118,7 +126,7 @@ export class AppsComponent implements OnInit, OnDestroy {
     }
 
     openInstallChooser(): void {
-        if (!this.device) return;
+        if (!this.device || this.deviceKind !== 'webos') return;
         const device = {...this.device};
         void this.chooseLocalFiles(device, async () => await showOpenDialog({
             filters: [{name: 'IPK package', extensions: ['ipk']}],
